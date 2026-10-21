@@ -1,0 +1,20 @@
+/* ============================================================
+ * CSS dùng chung của dự án
+ * File: assets/css/style.css
+ * ------------------------------------------------------------
+ * Ghi chú:
+ *   - Chỉ khai báo các tinh chỉnh riêng của hệ thống.
+ *   - Mọi thành phần giao diện cơ bản đã có sẵn ở AdminLTE 4
+ *     (admin-lte-v4.10.1/dist/css/adminlte.css).
+ *   - Nạp file này SAU adminlte.css trong views/layouts/header.php
+ *     và views/layouts/auth.php.
+ * ============================================================ */
+
+/* Ví dụ tinh chỉnh mẫu — có thể xóa khi không cần */
+.login-logo a {
+  text-decoration: none;
+}
+
+.table > :not(caption) > * > * {
+  vertical-align: middle;
+}
