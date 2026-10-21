@@ -5,7 +5,7 @@
 | # | Họ và tên | MSSV | Vai trò | Phân hệ phụ trách |
 | :--: | --- | --- | --- | --- |
 | 1 | **Nguyễn Đình Khánh** | 65131460 | **Nhóm trưởng**|
-| 2 | *(chờ cập nhật)* | mssv | Thành viên | 
+| 2 | *Trần Bảo Thiên* | 65133334 | Thành viên | 
 | 3 | *(chờ cập nhật)* | mssv | Thành viên | 
 | 4 | *(chờ cập nhật)* | mssv | Thành viên |
 | 5 | *(chờ cập nhật)* | mssv | Thành viên | 
