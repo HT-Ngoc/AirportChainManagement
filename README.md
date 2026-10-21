@@ -6,7 +6,7 @@
 | :--: | --- | --- | --- | --- |
 | 1 | **Nguyễn Đình Khánh** | 65131460 | **Nhóm trưởng**|
 | 2 | *(chờ cập nhật)* | mssv | Thành viên | 
-| 3 | *(chờ cập nhật)* | mssv | Thành viên | 
+| 3 | Huỳnh Tuấn Ngọc | 65132224 | Thành viên | 
 | 4 | *(chờ cập nhật)* | mssv | Thành viên |
 | 5 | *(chờ cập nhật)* | mssv | Thành viên | 
 
