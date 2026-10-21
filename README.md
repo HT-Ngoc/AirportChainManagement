@@ -8,6 +8,6 @@
 | 2 | *(chờ cập nhật)* | mssv | Thành viên | 
 | 3 | *(chờ cập nhật)* | mssv | Thành viên | 
 | 4 | *(chờ cập nhật)* | mssv | Thành viên |
-| 5 | *(chờ cập nhật)* | mssv | Thành viên | 
+| 5 | Nguyễn Thị Mỹ Khánh | 65131469 | Thành viên | 
 
 > Đề tài: Xây dựng ứng dụng web quản lý điều hành khai thác chuỗi cảng hàng không dựa trên mô hình hoạt động của Tổng công ty Cảng hàng không Việt Nam (ACV).
