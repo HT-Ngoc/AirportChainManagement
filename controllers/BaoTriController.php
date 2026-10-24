@@ -65,9 +65,10 @@ class BaoTriController {
 
     public function getThietBiList() {
         $result = $this->db->query(
-            "SELECT id, ten_thiet_bi, loai_thiet_bi, trang_thai
-             FROM thiet_bi_san_bay
-             ORDER BY ten_thiet_bi"
+            "SELECT tb.id, tb.ten_thiet_bi, tb.loai_thiet_bi, tb.trang_thai, sb.ten_san_bay
+             FROM thiet_bi_san_bay tb
+             LEFT JOIN san_bay sb ON tb.id_san_bay = sb.id
+             ORDER BY sb.ten_san_bay, tb.ten_thiet_bi"
         );
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
