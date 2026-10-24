@@ -1,14 +1,23 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cap_nhat_ticket') {
-    $baoTriController->capNhatTrangThaiTicket();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    if ($action === 'cap_nhat_ticket') {
+        $baoTriController->capNhatTrangThaiTicket();
+    } elseif ($action === 'store_ticket') {
+        $baoTriController->storeTicket();
+    }
 }
 
 if (!isset($tickets, $thong_ke)) {
     $data     = $baoTriController->getIndexData();
     $tickets  = $data['tickets'];
     $thong_ke = $data['thong_ke'];
+}
+
+if (!isset($thiet_bi_list)) {
+    $thiet_bi_list = $baoTriController->getThietBiList();
 }
 
 $pageTitle  = 'Bảo trì & khắc phục';
@@ -44,6 +53,41 @@ $priorityLabels = [
     'Trung_Binh' => 'Trung bình',
     'Khan_Cap'   => 'Khẩn cấp',
 ];
+
+$loaiThietBiLabels = [
+    'Den_Tin_Hieu'       => 'Đèn tín hiệu',
+    'Thiet_Bi_Dan_Duong' => 'Thiết bị dẫn đường',
+    'Xe_Thang'           => 'Xe thang',
+    'Xe_Keo'             => 'Xe kéo',
+    'Khac'               => 'Khác',
+];
+
+$trangThaiThietBiLabels = [
+    'Tot'     => 'Tốt',
+    'Bao_Tri' => 'Đang bảo trì',
+    'Hong'    => 'Hỏng',
+];
+
+// Tự mở lại modal khi vừa có lỗi nhập liệu
+$modalError = null;
+if (isset($_GET['open']) && $_GET['open'] === 'create' && !empty($_SESSION['flash_error'])) {
+    $modalError = (string) $_SESSION['flash_error'];
+    unset($_SESSION['flash_error']);
+}
+
+$pageScripts = '';
+if (isset($_GET['open']) && $_GET['open'] === 'create') {
+    $pageScripts = <<<'HTML'
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var modalElement = document.getElementById('taoPhieuModal');
+    if (modalElement && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    }
+});
+</script>
+HTML;
+}
 
 // Giá trị mặc định phòng khi view được nạp trực tiếp
 $thong_ke = array_merge([
@@ -95,9 +139,9 @@ ob_start();
                     <a href="<?= baoTriUrl('tau_bay.php') ?>" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-airplane me-1"></i> Loại tàu bay
                     </a>
-                    <a href="<?= baoTriUrl('create_ticket.php') ?>" class="btn btn-sm btn-primary">
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#taoPhieuModal">
                         <i class="bi bi-plus-lg me-1"></i> Tạo phiếu bảo trì
-                    </a>
+                    </button>
                 </div>
             </div>
             <div class="card-body table-responsive p-0">
@@ -171,6 +215,76 @@ ob_start();
         </div>
     </div>
 </div>
+
+<!--begin::Modal tạo phiếu bảo trì-->
+<div class="modal fade" id="taoPhieuModal" tabindex="-1" aria-labelledby="taoPhieuModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form action="<?= baoTriUrl('index.php') ?>" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="store_ticket">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taoPhieuModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i> Lập phiếu báo hỏng thiết bị
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+
+                <div class="modal-body">
+                    <?php if ($modalError !== null): ?>
+                        <div class="alert alert-danger py-2" role="alert">
+                            <?= htmlspecialchars($modalError, ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="mb-3">
+                        <label for="modal_id_thiet_bi" class="form-label">Chọn thiết bị gặp sự cố <span class="text-danger">*</span></label>
+                        <select name="id_thiet_bi" id="modal_id_thiet_bi" class="form-select" required>
+                            <option value="">-- Chọn thiết bị --</option>
+                            <?php if (!empty($thiet_bi_list)): ?>
+                                <?php foreach ($thiet_bi_list as $tb): ?>
+                                    <option value="<?= (int) $tb['id'] ?>">
+                                        <?= htmlspecialchars($tb['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?>
+                                        (<?= $loaiThietBiLabels[$tb['loai_thiet_bi']] ?? htmlspecialchars(str_replace('_', ' ', $tb['loai_thiet_bi']), ENT_QUOTES, 'UTF-8') ?>)
+                                        - <?= $trangThaiThietBiLabels[$tb['trang_thai']] ?? htmlspecialchars($tb['trang_thai'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modal_mo_ta_su_co" class="form-label">Mô tả chi tiết sự cố <span class="text-danger">*</span></label>
+                        <textarea name="mo_ta_su_co" id="modal_mo_ta_su_co" class="form-control" rows="4" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modal_muc_do" class="form-label">Mức độ nghiêm trọng <span class="text-danger">*</span></label>
+                        <select name="muc_do" id="modal_muc_do" class="form-select" required>
+                            <option value="Thap">Thấp</option>
+                            <option value="Trung_Binh">Trung bình</option>
+                            <option value="Khan_Cap">Khẩn cấp</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="modal_hinh_anh_minh_hoa" class="form-label">Hình ảnh minh họa</label>
+                        <input type="file" name="hinh_anh_minh_hoa" id="modal_hinh_anh_minh_hoa" class="form-control"
+                               accept="image/png, image/jpeg, image/jpg, image/gif">
+                        <div class="form-text">Không bắt buộc. Chấp nhận JPG, JPEG, PNG, GIF — tối đa 5 MB.</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-danger">Gửi yêu cầu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!--end::Modal tạo phiếu bảo trì-->
+
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/main.php';

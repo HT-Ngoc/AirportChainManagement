@@ -108,9 +108,8 @@ class BaoTriController {
     }
 
     public function createTicket() {
-        $thiet_bi_list = $this->getThietBiList();
-
-        require_once __DIR__ . '/../views/pages/bao_tri/create_ticket.php';
+        // Form tạo phiếu đã chuyển thành modal trên trang danh sách
+        $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
     }
 
     public function danhSachThietBi() {
@@ -137,7 +136,7 @@ class BaoTriController {
 
     public function storeTicket() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect($this->viewUrl('create_ticket.php'));
+            $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
         }
 
         $id_thiet_bi = isset($_POST['id_thiet_bi']) ? (int) $_POST['id_thiet_bi'] : 0;
@@ -146,15 +145,15 @@ class BaoTriController {
 
         if ($id_thiet_bi <= 0) {
             $this->setFlash('error', 'Vui lòng chọn thiết bị gặp sự cố.');
-            $this->redirect($this->viewUrl('create_ticket.php'));
+            $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
         }
         if ($mo_ta_su_co === '') {
             $this->setFlash('error', 'Vui lòng nhập mô tả sự cố.');
-            $this->redirect($this->viewUrl('create_ticket.php'));
+            $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
         }
         if (!in_array($muc_do, self::MUC_DO_HOP_LE, true)) {
             $this->setFlash('error', 'Mức độ sự cố không hợp lệ.');
-            $this->redirect($this->viewUrl('create_ticket.php'));
+            $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
         }
 
         // Kiểm tra thiết bị có thật trong CSDL
@@ -167,7 +166,7 @@ class BaoTriController {
 
         if (!$thiet_bi_ton_tai) {
             $this->setFlash('error', 'Thiết bị không tồn tại trong hệ thống.');
-            $this->redirect($this->viewUrl('create_ticket.php'));
+            $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
         }
 
         // Ảnh minh họa là tùy chọn (cột hinh_anh_minh_hoa cho phép NULL)
@@ -180,29 +179,29 @@ class BaoTriController {
 
             if ($file['error'] !== UPLOAD_ERR_OK) {
                 $this->setFlash('error', 'Tải ảnh minh họa thất bại. Vui lòng thử lại.');
-                $this->redirect($this->viewUrl('create_ticket.php'));
+                $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
             }
             if ($file['size'] > self::KICH_THUOC_ANH_TOI_DA) {
                 $this->setFlash('error', 'Ảnh minh họa không được vượt quá 5 MB.');
-                $this->redirect($this->viewUrl('create_ticket.php'));
+                $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
             }
 
             $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             if (!in_array($fileExtension, self::DINH_DANG_ANH_HOP_LE, true)) {
                 $this->setFlash('error', 'Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc GIF.');
-                $this->redirect($this->viewUrl('create_ticket.php'));
+                $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
             }
 
             $uploadDir = __DIR__ . '/../public/uploads/bao_tri/';
             if (!is_dir($uploadDir) && !mkdir($uploadDir, 0777, true) && !is_dir($uploadDir)) {
                 $this->setFlash('error', 'Không thể tạo thư mục lưu ảnh.');
-                $this->redirect($this->viewUrl('create_ticket.php'));
+                $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
             }
 
             $newFileName = time() . '_' . bin2hex(random_bytes(6)) . '.' . $fileExtension;
             if (!move_uploaded_file($file['tmp_name'], $uploadDir . $newFileName)) {
                 $this->setFlash('error', 'Không thể lưu ảnh minh họa lên máy chủ.');
-                $this->redirect($this->viewUrl('create_ticket.php'));
+                $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
             }
 
             $hinh_anh_minh_hoa = $newFileName;
@@ -237,7 +236,7 @@ class BaoTriController {
             }
 
             $this->setFlash('error', 'Lỗi cơ sở dữ liệu: ' . $e->getMessage());
-            $this->redirect($this->viewUrl('create_ticket.php'));
+            $this->redirect($this->viewUrl('index.php', ['open' => 'create']));
         }
 
         $this->setFlash('success', 'Đã tạo phiếu bảo trì thành công.');
