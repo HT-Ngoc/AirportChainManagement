@@ -120,9 +120,8 @@ class BaoTriController {
     }
 
     public function createThietBi() {
-        $san_bay_list = $this->getSanBayList();
-
-        require_once __DIR__ . '/../views/pages/bao_tri/them_thiet_bi.php';
+        // Form thêm thiết bị đã chuyển thành modal trên trang danh sách
+        $this->redirect($this->viewUrl('thiet_bi.php', ['open' => 'create']));
     }
 
     public function danhSachTauBay() {
@@ -246,7 +245,7 @@ class BaoTriController {
 
     public function storeThietBi() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect($this->viewUrl('them_thiet_bi.php'));
+            $this->redirect($this->viewUrl('thiet_bi.php', ['open' => 'create']));
         }
 
         $ten_thiet_bi  = isset($_POST['ten_thiet_bi']) ? trim((string) $_POST['ten_thiet_bi']) : '';
@@ -255,7 +254,7 @@ class BaoTriController {
 
         if ($ten_thiet_bi === '' || $id_san_bay <= 0 || !in_array($loai_thiet_bi, self::LOAI_THIET_BI_HOP_LE, true)) {
             $this->setFlash('error', 'Dữ liệu thiết bị không hợp lệ.');
-            $this->redirect($this->viewUrl('them_thiet_bi.php'));
+            $this->redirect($this->viewUrl('thiet_bi.php', ['open' => 'create']));
         }
 
         try {
@@ -268,7 +267,7 @@ class BaoTriController {
             $stmt->close();
         } catch (Throwable $e) {
             $this->setFlash('error', 'Lỗi thêm thiết bị: ' . $e->getMessage());
-            $this->redirect($this->viewUrl('them_thiet_bi.php'));
+            $this->redirect($this->viewUrl('thiet_bi.php', ['open' => 'create']));
         }
 
         $this->setFlash('success', 'Đã thêm thiết bị mới.');

@@ -362,7 +362,7 @@ ob_start();
                                 <?php if (empty($thietBiTheoSanBay)): ?>
                                     <div class="form-text text-danger mt-1">
                                         Chưa có thiết bị.
-                                        <a href="<?= baoTriUrl('them_thiet_bi.php') ?>">Thêm thiết bị</a> trước khi tạo phiếu.
+                                        <a href="<?= baoTriUrl('thiet_bi.php', ['open' => 'create']) ?>">Thêm thiết bị</a> trước khi tạo phiếu.
                                     </div>
                                 <?php endif; ?>
                             </div>
