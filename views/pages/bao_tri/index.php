@@ -29,7 +29,8 @@ foreach ($thiet_bi_list as $tb) {
 
 $pageTitle  = 'Bảo trì & khắc phục';
 $pageHeader = 'Bảo trì & khắc phục';
-$navActive  = 'bao_tri';
+$navActive    = 'bao_tri';
+$navSubActive = 'tickets';
 $breadcrumb = [
     ['label' => 'Tổng quan', 'url' => BASE_URL . '/index.php'],
     ['label' => 'Bảo trì', 'url' => null],
@@ -37,28 +38,40 @@ $breadcrumb = [
 
 $uploadBase = BASE_URL . '/public/uploads/bao_tri/';
 
-$statusColors = [
-    'Moi'        => 'info',
-    'Dang_Xu_Ly' => 'warning',
-    'Hoan_Thanh' => 'success',
-];
-
 $statusLabels = [
     'Moi'        => 'Mới',
     'Dang_Xu_Ly' => 'Đang xử lý',
     'Hoan_Thanh' => 'Hoàn thành',
 ];
 
-$priorityColors = [
-    'Thap'       => 'secondary',
-    'Trung_Binh' => 'primary',
-    'Khan_Cap'   => 'danger',
+$statusBadgeClasses = [
+    'Moi'        => 'text-info-emphasis bg-info-subtle border-info-subtle',
+    'Dang_Xu_Ly' => 'text-primary-emphasis bg-primary-subtle border-primary-subtle',
+    'Hoan_Thanh' => 'text-success-emphasis bg-success-subtle border-success-subtle',
+];
+
+$statusDotClasses = [
+    'Moi'        => 'bg-info',
+    'Dang_Xu_Ly' => 'bg-primary',
+    'Hoan_Thanh' => 'bg-success',
 ];
 
 $priorityLabels = [
     'Thap'       => 'Thấp',
     'Trung_Binh' => 'Trung bình',
     'Khan_Cap'   => 'Khẩn cấp',
+];
+
+$priorityBadgeClasses = [
+    'Thap'       => 'text-success-emphasis bg-success-subtle border-success-subtle',
+    'Trung_Binh' => 'text-warning-emphasis bg-warning-subtle border-warning-subtle',
+    'Khan_Cap'   => 'text-danger-emphasis bg-danger-subtle border-danger-subtle',
+];
+
+$priorityIcons = [
+    'Thap'       => 'bi-check-circle',
+    'Trung_Binh' => 'bi-exclamation-circle',
+    'Khan_Cap'   => 'bi-exclamation-octagon',
 ];
 
 $loaiThietBiLabels = [
@@ -88,8 +101,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var modalElement = document.getElementById('taoPhieuModal');
 
     // Tự mở lại modal khi quay về sau lỗi nhập liệu
-    if (modalElement && window.bootstrap && new URLSearchParams(window.location.search).get('open') === 'create') {
-        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    if (modalElement) {
+        if (window.bootstrap && new URLSearchParams(window.location.search).get('open') === 'create') {
+            bootstrap.Modal.getOrCreateInstance(modalElement).show();
+        }
+
+        modalElement.addEventListener('shown.bs.modal', function () {
+            var deviceSelect = document.getElementById('modal_id_thiet_bi');
+            if (deviceSelect) deviceSelect.focus();
+        });
+
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            var url = new URL(window.location.href);
+            if (url.searchParams.get('open') === 'create') {
+                url.searchParams.delete('open');
+                window.history.replaceState({}, '', url.toString());
+            }
+        });
     }
 
     var imageInput = document.getElementById('modal_hinh_anh_minh_hoa');
@@ -165,6 +193,62 @@ document.addEventListener('DOMContentLoaded', function () {
         description.addEventListener('input', updateDescriptionCount);
         updateDescriptionCount();
     }
+
+    // Bộ lọc phiếu bảo trì
+    var ticketTable = document.getElementById('ticketTable');
+    var ticketSearch = document.getElementById('ticketSearch');
+    var ticketStatusFilter = document.getElementById('ticketStatusFilter');
+    var ticketPriorityFilter = document.getElementById('ticketPriorityFilter');
+    var ticketResetFilters = document.getElementById('ticketResetFilters');
+    var ticketVisibleCount = document.getElementById('ticketVisibleCount');
+    var ticketNoResultRow = document.getElementById('ticketNoResultRow');
+
+    function normalizeText(value) {
+        return (value || '').toString().toLocaleLowerCase('vi')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd');
+    }
+
+    if (ticketTable && ticketSearch && ticketStatusFilter && ticketPriorityFilter) {
+        var ticketRows = Array.prototype.slice.call(ticketTable.querySelectorAll('tbody tr[data-ticket-search]'));
+
+        function applyTicketFilters() {
+            var keyword = normalizeText(ticketSearch.value.trim());
+            var status = ticketStatusFilter.value;
+            var priority = ticketPriorityFilter.value;
+            var visible = 0;
+
+            ticketRows.forEach(function (row) {
+                var matchKeyword = !keyword || normalizeText(row.getAttribute('data-ticket-search')).indexOf(keyword) !== -1;
+                var matchStatus = !status || row.getAttribute('data-ticket-status') === status;
+                var matchPriority = !priority || row.getAttribute('data-ticket-priority') === priority;
+                var show = matchKeyword && matchStatus && matchPriority;
+
+                row.classList.toggle('d-none', !show);
+                if (show) visible++;
+            });
+
+            if (ticketVisibleCount) ticketVisibleCount.textContent = visible;
+            if (ticketNoResultRow) ticketNoResultRow.classList.toggle('d-none', visible !== 0 || ticketRows.length === 0);
+        }
+
+        [ticketSearch, ticketStatusFilter, ticketPriorityFilter].forEach(function (element) {
+            element.addEventListener('input', applyTicketFilters);
+            element.addEventListener('change', applyTicketFilters);
+        });
+
+        if (ticketResetFilters) {
+            ticketResetFilters.addEventListener('click', function () {
+                ticketSearch.value = '';
+                ticketStatusFilter.value = '';
+                ticketPriorityFilter.value = '';
+                applyTicketFilters();
+                ticketSearch.focus();
+            });
+        }
+
+        applyTicketFilters();
+    }
 });
 </script>
 HTML;
@@ -177,122 +261,246 @@ $thong_ke = array_merge([
     'thiet_bi_bao_tri' => 0,
 ], $thong_ke ?? []);
 
+$totalTickets = count($tickets);
+
 ob_start();
 ?>
 <?php require __DIR__ . '/_flash.php'; ?>
-<div class="row">
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-primary">
-            <div class="inner"><h3><?= (int) $thong_ke['dang_mo'] ?></h3><p>Phiếu đang mở</p></div>
-            <i class="small-box-icon bi bi-clipboard-check"></i>
+<style>
+    .maint-stat-card { transition: transform .15s ease, box-shadow .15s ease; }
+    .maint-stat-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08) !important; }
+    .maint-stat-icon { width: 46px; height: 46px; flex: 0 0 46px; font-size: 1.3rem; }
+    .maint-stat-label { font-size: .7rem; letter-spacing: .04em; }
+    .maint-description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .maint-ticket-thumb { width: 52px; height: 52px; object-fit: cover; flex: 0 0 52px; }
+    @media (max-width: 575.98px) {
+        .maint-stat-icon { width: 38px; height: 38px; flex-basis: 38px; font-size: 1.05rem; }
+        .maint-stat-label { font-size: .63rem; }
+        .maint-stat-card .card-body { padding: .75rem; }
+        .maint-stat-card h3 { font-size: 1.4rem; }
+    }
+</style>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 maint-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="maint-stat-icon rounded-3 bg-primary-subtle text-primary-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-clipboard-check"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="maint-stat-label text-secondary text-uppercase fw-semibold">Phiếu đang mở</div>
+                    <div class="d-flex align-items-baseline gap-1">
+                        <h3 class="mb-0 fw-bold"><?= (int) $thong_ke['dang_mo'] ?></h3>
+                        <?php if ($totalTickets > 0): ?>
+                            <span class="small text-secondary d-none d-sm-inline">/ <?= $totalTickets ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Cần theo dõi</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-danger">
-            <div class="inner"><h3><?= (int) $thong_ke['khan_cap'] ?></h3><p>Sự cố khẩn cấp</p></div>
-            <i class="small-box-icon bi bi-exclamation-octagon"></i>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 maint-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="maint-stat-icon rounded-3 bg-danger-subtle text-danger-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-exclamation-octagon"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="maint-stat-label text-secondary text-uppercase fw-semibold">Sự cố khẩn cấp</div>
+                    <h3 class="mb-0 fw-bold"><?= (int) $thong_ke['khan_cap'] ?></h3>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Ưu tiên xử lý</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-success">
-            <div class="inner"><h3><?= (int) $thong_ke['hoan_thanh_thang'] ?></h3><p>Hoàn thành trong tháng</p></div>
-            <i class="small-box-icon bi bi-check2-circle"></i>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 maint-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="maint-stat-icon rounded-3 bg-success-subtle text-success-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-check2-circle"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="maint-stat-label text-secondary text-uppercase fw-semibold">Hoàn thành trong tháng</div>
+                    <h3 class="mb-0 fw-bold"><?= (int) $thong_ke['hoan_thanh_thang'] ?></h3>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Trong tháng này</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-info">
-            <div class="inner"><h3><?= (int) $thong_ke['thiet_bi_bao_tri'] ?></h3><p>Thiết bị đang bảo trì</p></div>
-            <i class="small-box-icon bi bi-tools"></i>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 maint-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="maint-stat-icon rounded-3 bg-info-subtle text-info-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-tools"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="maint-stat-label text-secondary text-uppercase fw-semibold">Thiết bị đang bảo trì</div>
+                    <h3 class="mb-0 fw-bold"><?= (int) $thong_ke['thiet_bi_bao_tri'] ?></h3>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Đang theo dõi</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Danh sách phiếu bảo trì</h3>
-                <div class="card-tools d-flex flex-wrap gap-1">
-                    <a href="<?= baoTriUrl('thiet_bi.php') ?>" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-hdd-stack me-1"></i> Trang thiết bị
-                    </a>
-                    <a href="<?= baoTriUrl('tau_bay.php') ?>" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-airplane me-1"></i> Loại tàu bay
-                    </a>
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#taoPhieuModal">
-                        <i class="bi bi-plus-lg me-1"></i> Tạo phiếu bảo trì
-                    </button>
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-body-tertiary border-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="flex-grow-1">
+            <h3 class="card-title mb-0 float-none">
+                <i class="bi bi-clipboard-check me-2 text-primary"></i>Danh sách phiếu bảo trì
+                <span class="badge bg-body-tertiary text-body border ms-1 align-middle fw-normal" title="Tổng số phiếu"><?= $totalTickets ?></span>
+            </h3>
+            <div class="small text-secondary mt-1">Theo dõi và cập nhật tiến độ xử lý</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#taoPhieuModal">
+                <i class="bi bi-plus-lg me-1"></i>Tạo phiếu bảo trì
+            </button>
+        </div>
+    </div>
+
+    <?php if (!empty($tickets)): ?>
+        <div class="card-body pb-2">
+            <div class="row g-2">
+                <div class="col-12 col-lg-5">
+                    <label for="ticketSearch" class="form-label small text-secondary mb-1">Tìm kiếm</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-body-tertiary"><i class="bi bi-search"></i></span>
+                        <input type="search" id="ticketSearch" class="form-control" placeholder="Mã phiếu, thiết bị hoặc mô tả...">
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <label for="ticketStatusFilter" class="form-label small text-secondary mb-1">Trạng thái</label>
+                    <select id="ticketStatusFilter" class="form-select form-select-sm">
+                        <option value="">Tất cả trạng thái</option>
+                        <?php foreach ($statusLabels as $key => $label): ?>
+                            <option value="<?= $key ?>"><?= $label ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-4">
+                    <label for="ticketPriorityFilter" class="form-label small text-secondary mb-1">Mức độ</label>
+                    <select id="ticketPriorityFilter" class="form-select form-select-sm">
+                        <option value="">Tất cả mức độ</option>
+                        <?php foreach ($priorityLabels as $key => $label): ?>
+                            <option value="<?= $key ?>"><?= $label ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
-            <div class="card-body table-responsive p-0">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Mã phiếu</th>
-                            <th>Thiết bị sự cố</th>
-                            <th>Mô tả sự cố</th>
-                            <th>Ảnh</th>
-                            <th>Ngày tạo</th>
-                            <th>Mức độ</th>
-                            <th>Trạng thái</th>
-                            <th class="text-end">Cập nhật trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($tickets)): ?>
-                            <?php foreach ($tickets as $ticket): ?>
-                                <tr>
-                                    <td><strong>#BT-<?= (int) $ticket['id'] ?></strong></td>
-                                    <td><?= htmlspecialchars($ticket['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?></td>
-                                    <td style="max-width: 300px; white-space: normal; word-break: break-word;">
-                                        <?= htmlspecialchars($ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8') ?>
-                                    </td>
-                                    <td>
-                                        <?php if (!empty($ticket['hinh_anh_minh_hoa'])): ?>
-                                            <?php $anhUrl = $uploadBase . rawurlencode($ticket['hinh_anh_minh_hoa']); ?>
-                                            <a href="<?= $anhUrl ?>" target="_blank" rel="noopener">
-                                                <img src="<?= $anhUrl ?>" alt="Ảnh sự cố"
-                                                     class="rounded border"
-                                                     style="width: 56px; height: 56px; object-fit: cover;">
-                                            </a>
-                                        <?php else: ?>
-                                            <span class="text-muted">—</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= date('d/m/Y H:i', strtotime($ticket['ngay_tao'])) ?></td>
-                                    <td>
-                                        <span class="badge text-bg-<?= $priorityColors[$ticket['muc_do']] ?? 'secondary' ?>">
-                                            <?= $priorityLabels[$ticket['muc_do']] ?? htmlspecialchars($ticket['muc_do'], ENT_QUOTES, 'UTF-8') ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge text-bg-<?= $statusColors[$ticket['trang_thai_xu_ly']] ?? 'secondary' ?>">
-                                            <?= $statusLabels[$ticket['trang_thai_xu_ly']] ?? htmlspecialchars($ticket['trang_thai_xu_ly'], ENT_QUOTES, 'UTF-8') ?>
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <form action="<?= baoTriUrl('index.php') ?>" method="POST" class="d-flex justify-content-end align-items-center">
-                                            <input type="hidden" name="action" value="cap_nhat_ticket">
-                                            <input type="hidden" name="id_ticket" value="<?= (int) $ticket['id'] ?>">
-                                            <select name="trang_thai_xu_ly" class="form-select form-select-sm w-auto me-1" <?= $ticket['trang_thai_xu_ly'] === 'Hoan_Thanh' ? 'disabled' : '' ?>>
-                                                <option value="Moi" <?= $ticket['trang_thai_xu_ly'] === 'Moi' ? 'selected' : '' ?>>Mới</option>
-                                                <option value="Dang_Xu_Ly" <?= $ticket['trang_thai_xu_ly'] === 'Dang_Xu_Ly' ? 'selected' : '' ?>>Đang xử lý</option>
-                                                <option value="Hoan_Thanh" <?= $ticket['trang_thai_xu_ly'] === 'Hoan_Thanh' ? 'selected' : '' ?>>Hoàn thành</option>
-                                            </select>
-                                            <?php if ($ticket['trang_thai_xu_ly'] !== 'Hoan_Thanh'): ?>
-                                                <button type="submit" class="btn btn-sm btn-success">Lưu</button>
-                                            <?php endif; ?>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="8" class="text-center text-muted">Chưa có yêu cầu bảo trì nào.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-secondary mt-2">
+                <span>Hiển thị <strong id="ticketVisibleCount"><?= $totalTickets ?></strong> / <strong><?= $totalTickets ?></strong> phiếu</span>
+                <button type="button" id="ticketResetFilters" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Xóa lọc
+                </button>
             </div>
         </div>
+    <?php endif; ?>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0" id="ticketTable">
+            <thead>
+                <tr class="text-uppercase small text-secondary">
+                    <th class="ps-3">Phiếu</th>
+                    <th>Thiết bị &amp; sự cố</th>
+                    <th>Mức độ / Trạng thái</th>
+                    <th class="text-end pe-3">Cập nhật</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($tickets)): ?>
+                    <?php foreach ($tickets as $ticket): ?>
+                        <?php
+                        $maPhieu = '#BT-' . sprintf('%03d', (int) $ticket['id']);
+                        $ngayTao = date('d/m/Y H:i', strtotime($ticket['ngay_tao']));
+                        $mucDo = $ticket['muc_do'];
+                        $trangThai = $ticket['trang_thai_xu_ly'];
+                        $priorityLabel = $priorityLabels[$mucDo] ?? htmlspecialchars($mucDo, ENT_QUOTES, 'UTF-8');
+                        $priorityClass = $priorityBadgeClasses[$mucDo] ?? 'text-secondary bg-body-tertiary border-secondary-subtle';
+                        $priorityIcon = $priorityIcons[$mucDo] ?? 'bi-circle';
+                        $statusLabel = $statusLabels[$trangThai] ?? htmlspecialchars($trangThai, ENT_QUOTES, 'UTF-8');
+                        $statusClass = $statusBadgeClasses[$trangThai] ?? 'text-secondary bg-body-tertiary border-secondary-subtle';
+                        $statusDot = $statusDotClasses[$trangThai] ?? 'bg-secondary';
+                        $anhUrl = !empty($ticket['hinh_anh_minh_hoa'])
+                            ? $uploadBase . rawurlencode($ticket['hinh_anh_minh_hoa'])
+                            : '';
+                        ?>
+                        <tr data-ticket-search="<?= htmlspecialchars($maPhieu . ' ' . $ticket['ten_thiet_bi'] . ' ' . $ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-ticket-status="<?= htmlspecialchars($trangThai, ENT_QUOTES, 'UTF-8') ?>"
+                            data-ticket-priority="<?= htmlspecialchars($mucDo, ENT_QUOTES, 'UTF-8') ?>">
+                            <td class="ps-3" style="min-width: 105px; white-space: nowrap;">
+                                <div class="fw-semibold text-primary"><?= $maPhieu ?></div>
+                                <div class="small text-secondary"><i class="bi bi-clock me-1"></i><?= $ngayTao ?></div>
+                            </td>
+                            <td style="min-width: 230px; white-space: normal;">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        <div class="fw-semibold"><?= htmlspecialchars($ticket['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?></div>
+                                        <div class="small text-secondary maint-description" title="<?= htmlspecialchars($ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= htmlspecialchars($ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8') ?>
+                                        </div>
+                                    </div>
+                                    <?php if ($anhUrl !== ''): ?>
+                                        <a href="<?= $anhUrl ?>" target="_blank" rel="noopener" class="flex-shrink-0" title="Xem ảnh minh họa">
+                                            <img src="<?= $anhUrl ?>" alt="Ảnh sự cố" class="rounded border maint-ticket-thumb">
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td style="min-width: 145px; white-space: nowrap;">
+                                <div class="d-flex flex-column align-items-start gap-1">
+                                    <span class="badge rounded-pill border <?= $priorityClass ?>">
+                                        <i class="bi <?= $priorityIcon ?> me-1"></i><?= $priorityLabel ?>
+                                    </span>
+                                    <span class="badge rounded-pill border <?= $statusClass ?>">
+                                        <span class="d-inline-block rounded-circle <?= $statusDot ?> me-1" style="width: 6px; height: 6px;"></span>
+                                        <?= $statusLabel ?>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="text-end pe-3" style="min-width: 165px;">
+                                <?php if ($trangThai !== 'Hoan_Thanh'): ?>
+                                    <form action="<?= baoTriUrl('index.php') ?>" method="POST" class="d-flex justify-content-end align-items-center gap-1">
+                                        <input type="hidden" name="action" value="cap_nhat_ticket">
+                                        <input type="hidden" name="id_ticket" value="<?= (int) $ticket['id'] ?>">
+                                        <select name="trang_thai_xu_ly" class="form-select form-select-sm" style="max-width: 115px;" aria-label="Cập nhật trạng thái phiếu <?= $maPhieu ?>">
+                                            <option value="Moi" <?= $trangThai === 'Moi' ? 'selected' : '' ?>>Mới</option>
+                                            <option value="Dang_Xu_Ly" <?= $trangThai === 'Dang_Xu_Ly' ? 'selected' : '' ?>>Đang xử lý</option>
+                                            <option value="Hoan_Thanh" <?= $trangThai === 'Hoan_Thanh' ? 'selected' : '' ?>>Hoàn thành</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-success" title="Lưu trạng thái" aria-label="Lưu trạng thái phiếu <?= $maPhieu ?>">
+                                            <i class="bi bi-check2"></i>
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <span class="badge text-success-emphasis bg-success-subtle border border-success-subtle">
+                                        <i class="bi bi-check2-circle me-1"></i>Đã hoàn thành
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-secondary mb-2"><i class="bi bi-clipboard-x fs-1"></i></div>
+                            <div class="fw-semibold">Chưa có phiếu bảo trì nào</div>
+                            <div class="small text-secondary mb-3">Tạo phiếu đầu tiên để ghi nhận sự cố và theo dõi xử lý.</div>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#taoPhieuModal">
+                                <i class="bi bi-plus-lg me-1"></i>Tạo phiếu bảo trì
+                            </button>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                <tr id="ticketNoResultRow" class="d-none">
+                    <td colspan="4" class="text-center py-4 text-secondary">
+                        <i class="bi bi-search me-1"></i> Không tìm thấy phiếu phù hợp với bộ lọc.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 

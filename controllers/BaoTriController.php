@@ -285,7 +285,7 @@ class BaoTriController {
 
         if ($ma_loai === '' || $mtow <= 0 || $suc_chua <= 0) {
             $this->setFlash('error', 'Thông tin loại tàu bay không hợp lệ.');
-            $this->redirect($this->viewUrl('tau_bay.php'));
+            $this->redirect($this->viewUrl('tau_bay.php', ['open' => 'create']));
         }
 
         try {
@@ -302,10 +302,10 @@ class BaoTriController {
             } else {
                 $this->setFlash('error', 'Lỗi thêm loại tàu bay: ' . $e->getMessage());
             }
-            $this->redirect($this->viewUrl('tau_bay.php'));
+            $this->redirect($this->viewUrl('tau_bay.php', ['open' => 'create']));
         } catch (Throwable $e) {
             $this->setFlash('error', 'Lỗi thêm loại tàu bay: ' . $e->getMessage());
-            $this->redirect($this->viewUrl('tau_bay.php'));
+            $this->redirect($this->viewUrl('tau_bay.php', ['open' => 'create']));
         }
 
         $this->setFlash('success', 'Đã thêm loại tàu bay mới.');

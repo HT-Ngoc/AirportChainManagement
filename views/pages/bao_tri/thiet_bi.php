@@ -26,7 +26,8 @@ if (isset($_GET['open']) && $_GET['open'] === 'create' && !empty($_SESSION['flas
 
 $pageTitle  = 'Quản lý Thiết bị Sân bay';
 $pageHeader = 'Danh mục Trang thiết bị';
-$navActive  = 'bao_tri';
+$navActive    = 'bao_tri';
+$navSubActive = 'equipment';
 $breadcrumb = [
     ['label' => 'Tổng quan', 'url' => BASE_URL . '/index.php'],
     ['label' => 'Bảo trì', 'url' => baoTriUrl('index.php')],
@@ -203,29 +204,74 @@ HTML;
 ob_start();
 ?>
 <?php require __DIR__ . '/_flash.php'; ?>
-<div class="row">
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-primary">
-            <div class="inner"><h3><?= $tongThietBi ?></h3><p>Tổng thiết bị</p></div>
-            <i class="small-box-icon bi bi-hdd-stack"></i>
+<style>
+    .equip-stat-card { transition: transform .15s ease, box-shadow .15s ease; }
+    .equip-stat-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08) !important; }
+    .equip-stat-icon { width: 46px; height: 46px; flex: 0 0 46px; font-size: 1.3rem; }
+    .equip-stat-label { font-size: .7rem; letter-spacing: .04em; }
+    @media (max-width: 575.98px) {
+        .equip-stat-icon { width: 38px; height: 38px; flex-basis: 38px; font-size: 1.05rem; }
+        .equip-stat-label { font-size: .63rem; }
+        .equip-stat-card .card-body { padding: .75rem; }
+        .equip-stat-card h3 { font-size: 1.4rem; }
+    }
+</style>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 equip-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="equip-stat-icon rounded-3 bg-primary-subtle text-primary-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-hdd-stack"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="equip-stat-label text-secondary text-uppercase fw-semibold">Tổng thiết bị</div>
+                    <h3 class="mb-0 fw-bold"><?= $tongThietBi ?></h3>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Toàn bộ danh mục</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-success">
-            <div class="inner"><h3><?= $soThietBiTot ?></h3><p>Đang hoạt động</p></div>
-            <i class="small-box-icon bi bi-check2-circle"></i>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 equip-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="equip-stat-icon rounded-3 bg-success-subtle text-success-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-check2-circle"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="equip-stat-label text-secondary text-uppercase fw-semibold">Đang hoạt động</div>
+                    <h3 class="mb-0 fw-bold"><?= $soThietBiTot ?></h3>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Sẵn sàng khai thác</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-warning">
-            <div class="inner"><h3><?= $soThietBiBaoTri ?></h3><p>Đang bảo trì</p></div>
-            <i class="small-box-icon bi bi-tools"></i>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 equip-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="equip-stat-icon rounded-3 bg-warning-subtle text-warning-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-tools"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="equip-stat-label text-secondary text-uppercase fw-semibold">Đang bảo trì</div>
+                    <h3 class="mb-0 fw-bold"><?= $soThietBiBaoTri ?></h3>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Cần theo dõi</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box text-bg-danger">
-            <div class="inner"><h3><?= $soThietBiHong ?></h3><p>Đang hỏng</p></div>
-            <i class="small-box-icon bi bi-exclamation-triangle"></i>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 equip-stat-card">
+            <div class="card-body d-flex align-items-center gap-2 gap-sm-3">
+                <span class="equip-stat-icon rounded-3 bg-danger-subtle text-danger-emphasis d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </span>
+                <div style="min-width: 0;">
+                    <div class="equip-stat-label text-secondary text-uppercase fw-semibold">Đang hỏng</div>
+                    <h3 class="mb-0 fw-bold"><?= $soThietBiHong ?></h3>
+                    <div class="small text-secondary text-truncate d-none d-sm-block">Cần xử lý</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -234,14 +280,11 @@ ob_start();
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-body-tertiary border-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div>
-                    <h3 class="card-title mb-0"><i class="bi bi-hdd-stack me-2 text-primary"></i>Danh sách thiết bị</h3>
+                <div class="flex-grow-1">
+                    <h3 class="card-title mb-0 float-none"><i class="bi bi-hdd-stack me-2 text-primary"></i>Danh sách thiết bị</h3>
                     <div class="small text-secondary mt-1">Quản lý trang thiết bị mặt đất trên toàn mạng lưới</div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="<?= baoTriUrl('index.php') ?>" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Phiếu bảo trì
-                    </a>
                     <button type="button" class="btn btn-sm btn-success"
                             data-bs-toggle="modal" data-bs-target="#themThietBiModal">
                         <i class="bi bi-plus-lg me-1"></i>Thêm thiết bị
@@ -259,7 +302,7 @@ ob_start();
                                 <input type="search" id="filterSearch" class="form-control" placeholder="Tên thiết bị hoặc mã TB...">
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-12 col-sm-6 col-lg-3">
                             <label for="filterSanBay" class="form-label small text-secondary mb-1">Sân bay</label>
                             <select id="filterSanBay" class="form-select form-select-sm">
                                 <option value="">Tất cả sân bay</option>
@@ -277,7 +320,7 @@ ob_start();
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-6 col-lg-2">
+                        <div class="col-6 col-lg-3">
                             <label for="filterTrangThai" class="form-label small text-secondary mb-1">Trạng thái</label>
                             <select id="filterTrangThai" class="form-select form-select-sm">
                                 <option value="">Tất cả trạng thái</option>
@@ -286,28 +329,26 @@ ob_start();
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-6 col-lg-1 d-grid align-self-end">
-                            <button type="button" id="resetFilters" class="btn btn-sm btn-outline-secondary" title="Xóa bộ lọc">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                            </button>
-                        </div>
                     </div>
-                    <div class="small text-secondary mt-2">
-                        Hiển thị <strong id="visibleCount"><?= $tongThietBi ?></strong> / <strong><?= $tongThietBi ?></strong> thiết bị
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-secondary mt-2">
+                        <span>Hiển thị <strong id="visibleCount"><?= $tongThietBi ?></strong> / <strong><?= $tongThietBi ?></strong> thiết bị</span>
+                        <button type="button" id="resetFilters" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Xóa lọc
+                        </button>
                     </div>
                 </div>
             <?php endif; ?>
 
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="thietBiTable">
+                <table class="table table-hover table-sm align-middle mb-0" id="thietBiTable">
                     <thead>
                         <tr class="text-uppercase small text-secondary">
                             <th class="ps-3">Thiết bị</th>
                             <th>Phân loại</th>
                             <th>Sân bay</th>
                             <th>Trạng thái</th>
-                            <th class="text-center">Phiếu BT</th>
-                            <th class="text-end pe-3">Thao tác</th>
+                            <th class="text-center">Số phiếu</th>
+                            <th class="text-end pe-3 text-nowrap">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -328,7 +369,7 @@ ob_start();
                                     data-trang-thai="<?= htmlspecialchars($item['trang_thai'], ENT_QUOTES, 'UTF-8') ?>">
                                     <td class="ps-3" style="min-width: 190px; white-space: normal;">
                                         <div class="d-flex align-items-center gap-2">
-                                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary" style="width: 38px; height: 38px; flex: 0 0 38px;">
+                                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary" style="width: 36px; height: 36px; flex: 0 0 36px;">
                                                 <i class="bi <?= $loaiIcon ?>"></i>
                                             </span>
                                             <div>
@@ -360,7 +401,7 @@ ob_start();
                                             <span class="text-secondary small">Chưa có</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="text-end pe-3">
+                                    <td class="text-end pe-3 text-nowrap">
                                         <?php if ($soPhieu > 0): ?>
                                             <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Không thể xóa vì thiết bị đã có phiếu bảo trì">
                                                 <i class="bi bi-lock me-1"></i>Đã có phiếu
