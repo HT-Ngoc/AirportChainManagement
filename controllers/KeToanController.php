@@ -31,5 +31,56 @@ class KeToanController {
         return mysqli_query($this->conn, $sql);
     }
 
+//2. PHÁT HÀNH HÓA ĐƠN
+
+  //Các chuyến bay đã hoàn thành
+    public function ChuyenBayHoanThanh() {
+        // Đã sửa lại thành 'Hoan_Thanh' theo đúng Database của bạn
+        $sql = "SELECT * FROM chuyen_bay_ngay WHERE trang_thai_tong = 'Hoan_Thanh'";
+        $result = mysqli_query($this->conn, $sql);
+        $data = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data[] = $row;
+            }
+        }
+        return $data;
+    }
+
+// Tính toán và tạo hóa đơn cho chuyến bay
+        public function TinhVaTaoHoaDon($id_chuyen_bay) {
+        $id_chuyen_bay = (int)$id_chuyen_bay; 
+        $sql_info = "SELECT cb.*, tb.tai_trong_cat_canh_mtow 
+                     FROM chuyen_bay_ngay cb 
+                     JOIN loai_tau_bay tb ON cb.id_loai_tau_bay = tb.id 
+                     WHERE cb.id = $id_chuyen_bay";
+        $result_info = mysqli_query($this->conn, $sql_info);
+        $cb = mysqli_fetch_assoc($result_info);
+        if ($cb) {
+            $time_du_kien = strtotime($cb['gio_du_kien']);
+            $time_thuc_te = $cb['gio_thuc_te'] ? strtotime($cb['gio_thuc_te']) : time();
+            $so_gio_do = ($time_thuc_te - $time_du_kien) / 3600;
+            if ($so_gio_do <= 0) $so_gio_do = 1; 
+            $result_gia = mysqli_query($this->conn, "SELECT loai_dich_vu, don_gia 
+                                                     FROM bang_gia_dich_vu");
+            $bang_gia = [];
+            while ($row = mysqli_fetch_assoc($result_gia)) {
+                $bang_gia[$row['loai_dich_vu']] = $row['don_gia'];
+            }
+            $gia_ha_canh = $bang_gia['Phi_Cat_Ha_Canh'] ?? 0;
+            $gia_do = $bang_gia['Phi_Do_Tau_Bay'] ?? 0;
+            $phi_psc = $bang_gia['Phi_Phuc_Vu_Hanh_Khach'] ?? 0;
+            $phi_cat_ha_canh = $cb['tai_trong_cat_canh_mtow'] * $gia_ha_canh;
+            $phi_do_tau_bay = $so_gio_do * $gia_do;
+            $phi_phuc_vu_hk = $cb['luong_hanh_khach'] * $phi_psc;
+            $tong_tien = $phi_cat_ha_canh + $phi_do_tau_bay + $phi_phuc_vu_hk;
+            $sql_insert = "INSERT INTO hoa_don (id_chuyen_bay, phi_cat_ha_canh, phi_do_tau_bay, phi_phuc_vu_hk, tong_tien, ngay_xuat, han_thanh_toan, trang_thai_thanh_toan) 
+                           VALUES ($id_chuyen_bay, $phi_cat_ha_canh, $phi_do_tau_bay, $phi_phuc_vu_hk, $tong_tien, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'Chua_Thanh_Toan')";
+            return mysqli_query($this->conn, $sql_insert);
+        }
+        return false;
+    }
+
+
 }
 ?>
