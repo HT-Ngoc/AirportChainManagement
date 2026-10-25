@@ -30,4 +30,6 @@ class KeToanController {
                 VALUES ('$ten', '$gia', '$don_vi')";
         return mysqli_query($this->conn, $sql);
     }
+
 }
+?>
