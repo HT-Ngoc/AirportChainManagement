@@ -148,6 +148,50 @@ ob_start();
     </div>
 </div>
 
+<!--Hóa đơn chờ thanh toán-->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card card-warning card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-cash-coin me-2"></i>Hóa đơn chờ thanh toán</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã HĐ</th>
+                            <th>Chuyến bay</th>
+                            <th>Tổng tiền</th>
+                            <th>Hạn chót</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if(empty($danh_sach_hoa_don_cho)): ?>
+                            <tr><td colspan="5" class="text-center">Không có hóa đơn nào chờ thanh toán.</td></tr>
+                        <?php endif; ?>
+                        
+                        <?php foreach ($danh_sach_hoa_don_cho as $hd): ?>
+                        <tr>
+                            <td>#<?= $hd['id'] ?></td>
+                            <td><?= htmlspecialchars($hd['so_hieu']) ?></td>
+                            <td class="text-danger fw-bold"><?= number_format($hd['tong_tien']) ?> VNĐ</td>
+                            <td><?= date('d/m/Y', strtotime($hd['han_thanh_toan'])) ?></td>
+                            <td class="text-end">
+                                <a href="index.php?page=ke_toan&thanh_toan_id=<?= $hd['id'] ?>" 
+                                   class="btn btn-sm btn-success"
+                                   onclick="return confirm('Xác nhận khách đã thanh toán hóa đơn này?');">
+                                   <i class="bi bi-check-circle"></i> Xác nhận thu tiền
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <?php

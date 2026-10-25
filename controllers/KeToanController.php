@@ -81,6 +81,95 @@ class KeToanController {
         return false;
     }
 
+//3. DASHBOARD
+
+// Doanh thu theo tháng
+    public function DoanhThuTheoThang() {
+        $sql = "SELECT MONTH(ngay_xuat) as thang, SUM(tong_tien) as tong_doanh_thu 
+                FROM hoa_don 
+                WHERE trang_thai_thanh_toan = 'Da_Thanh_Toan' 
+                GROUP BY MONTH(ngay_xuat) 
+                ORDER BY thang ASC";
+        $result = mysqli_query($this->conn, $sql);
+        $data = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data[] = $row;
+            }
+        }
+        return $data;
+    }
+
+// Doanh thu theo hãng hàng không
+    public function DoanhThuTheoHang() {
+        $sql = "SELECT hk.ten_hang, SUM(hd.tong_tien) as doanh_thu 
+                FROM hoa_don hd
+                JOIN chuyen_bay_ngay cb ON hd.id_chuyen_bay = cb.id
+                JOIN hang_hang_khong hk ON cb.id_hang_hang_khong = hk.id
+                WHERE hd.trang_thai_thanh_toan = 'Da_Thanh_Toan'
+                GROUP BY hk.id, hk.ten_hang
+                ORDER BY doanh_thu DESC";
+        $result = mysqli_query($this->conn, $sql);
+        $data = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data[] = $row;
+            }
+        }
+        return $data;
+    }
+
+// Thống kê nhanh
+    public function ThongKeNhanh() {
+        $stats = []; 
+        $sql1 = "SELECT SUM(tong_tien) as doanh_thu 
+                 FROM hoa_don 
+                 WHERE trang_thai_thanh_toan = 'Da_Thanh_Toan' 
+                 AND MONTH(ngay_xuat) = MONTH(CURRENT_DATE())";
+        $stats['doanh_thu_thang'] = mysqli_fetch_assoc(mysqli_query($this->conn, $sql1))['doanh_thu'] ?? 0;
+        $sql2 = "SELECT COUNT(*) as sl
+                 FROM hoa_don 
+                 WHERE trang_thai_thanh_toan = 'Da_Thanh_Toan'";
+        $stats['hd_da_thu'] = mysqli_fetch_assoc(mysqli_query($this->conn, $sql2))['sl'] ?? 0;
+        $sql3 = "SELECT COUNT(*) as sl 
+                 FROM hoa_don 
+                 WHERE trang_thai_thanh_toan = 'Chua_Thanh_Toan'";
+        $stats['hd_chua_thu'] = mysqli_fetch_assoc(mysqli_query($this->conn, $sql3))['sl'] ?? 0;
+        $sql4 = "SELECT SUM(tong_tien) as tien_no 
+                 FROM hoa_don 
+                 WHERE trang_thai_thanh_toan = 'Chua_Thanh_Toan' 
+                 AND han_thanh_toan < CURRENT_DATE()";
+        $stats['no_qua_han'] = mysqli_fetch_assoc(mysqli_query($this->conn, $sql4))['tien_no'] ?? 0;
+        $sql5 = "SELECT COUNT(*) as sl 
+                 FROM chuyen_bay_ngay 
+                 WHERE DATE(gio_thuc_te) = CURRENT_DATE()";
+        $stats['chuyen_bay_trong_ngay'] = mysqli_fetch_assoc(mysqli_query($this->conn, $sql5))['sl'] ?? 0;
+        return $stats;
+    }
+
+//Danh sách hóa đơn chờ
+    public function DanhSachHoaDonCho() {
+        $sql = "SELECT hd.*, cb.so_hieu 
+                FROM hoa_don hd 
+                JOIN chuyen_bay_ngay cb ON hd.id_chuyen_bay = cb.id 
+                WHERE hd.trang_thai_thanh_toan = 'Chua_Thanh_Toan'";
+        $result = mysqli_query($this->conn, $sql);
+        $data = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data[] = $row;
+            }
+        }
+        return $data;
+    }
+
+// Xác nhận thanh toán hóa đơn
+    public function XacNhanThanhToan($id_hoa_don) {
+        $id_hoa_don = (int)$id_hoa_don;
+        $sql = "UPDATE hoa_don SET trang_thai_thanh_toan = 'Da_Thanh_Toan' WHERE id = $id_hoa_don";
+        return mysqli_query($this->conn, $sql);
+    }
+
 
 }
 ?>
