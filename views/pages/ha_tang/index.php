@@ -137,15 +137,6 @@ $totalGates = array_sum(array_column($data['airports'], 'so_cua_ra'));
 $totalCheckins = array_sum(array_column($data['airports'], 'so_quay_checkin'));
 $totalBelts = array_sum(array_column($data['airports'], 'so_bang_chuyen'));
 
-$manageParams = ['quan_tri' => '1', 'tab' => 'san_bay'];
-if ($selectedAirport) {
-    $manageParams['san_bay'] = $selectedAirport['ma_iata'];
-}
-if ($selectedTerminal) {
-    $manageParams['nha_ga'] = (int) $selectedTerminal['id'];
-}
-$manageUrl = $url($manageParams);
-
 $viewParams = [];
 if ($selectedAirport) {
     $viewParams['san_bay'] = $selectedAirport['ma_iata'];
@@ -158,34 +149,7 @@ if ($selectedTerminal) {
 }
 $viewUrl = $url($viewParams);
 
-$domesticRows = $data['domesticRows'];
-$internationalRows = $data['internationalRows'];
-$firstDomesticRow = array_shift($domesticRows);
-$rowGroups = [];
-if ($firstDomesticRow) {
-    $rowGroups[] = [
-        'label' => 'Quốc nội',
-        'icon' => 'bi-house-door',
-        'class' => 'ht-airport-row--4',
-        'items' => $firstDomesticRow,
-    ];
-}
-foreach ($internationalRows as $row) {
-    $rowGroups[] = [
-        'label' => 'Quốc tế',
-        'icon' => 'bi-globe2',
-        'class' => 'ht-airport-row--7',
-        'items' => $row,
-    ];
-}
-foreach ($domesticRows as $row) {
-    $rowGroups[] = [
-        'label' => 'Quốc nội',
-        'icon' => 'bi-house-door',
-        'class' => 'ht-airport-row--4',
-        'items' => $row,
-    ];
-}
+$airports = $data['airports'];
 
 $pageTitle = 'Quản lý hạ tầng';
 $pageHeader = 'Quản lý hạ tầng';
@@ -342,182 +306,126 @@ ob_start();
   }
   .ht-page .ht-legend .is-intl { background: var(--ht-intl); }
   .ht-page .ht-legend .is-dom { background: var(--ht-dom); }
-  .ht-page .ht-row-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-    margin: 0 0 .45rem;
-    color: var(--ht-muted);
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: .09em;
-    text-transform: uppercase;
-  }
-  .ht-page .ht-row-head span:first-child {
-    display: inline-flex;
-    align-items: center;
-    gap: .35rem;
-  }
-  .ht-page .ht-row-head .ht-row-count {
-    letter-spacing: .02em;
-    font-weight: 500;
-    text-transform: none;
-  }
-  .ht-page .ht-airport-row {
+  .ht-page .ht-airport-grid {
     display: grid;
-    gap: 10px;
-    margin-bottom: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    justify-content: start;
+    gap: 12px;
+    margin-bottom: 1rem;
   }
-  .ht-page .ht-airport-row--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .ht-page .ht-airport-row--7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .ht-page .ht-airport {
     position: relative;
-    display: block;
-    min-height: 158px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
-    color: #fff;
+    border: 1px solid var(--ht-line);
+    border-radius: 16px;
+    color: var(--ht-ink);
     text-decoration: none;
-    background: #0f172a;
-    clip-path: polygon(13% 0, 87% 0, 100% 13%, 100% 87%, 87% 100%, 13% 100%, 0 87%, 0 13%);
-    filter: drop-shadow(0 10px 16px rgba(4, 12, 24, .16));
-    transition: transform .22s ease, filter .22s ease;
-    isolation: isolate;
-  }
-  .ht-page .ht-airport-row--7 .ht-airport {
-    min-height: 142px;
+    background: var(--bs-body-bg);
+    box-shadow: 0 8px 18px rgba(8, 25, 50, .08);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
   }
   .ht-page .ht-airport:hover {
-    color: #fff;
+    color: var(--ht-ink);
+    border-color: rgba(37, 99, 235, .4);
+    box-shadow: 0 14px 26px rgba(8, 25, 50, .16);
     transform: translateY(-3px);
-    filter: drop-shadow(0 16px 24px rgba(4, 12, 24, .28));
   }
-  .ht-page .ht-airport img {
-    position: absolute;
-    inset: 0;
+  .ht-page .ht-airport:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+  }
+  .ht-page .ht-airport.is-selected {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, .2), 0 14px 26px rgba(8, 25, 50, .16);
+  }
+  .ht-page .ht-airport__media {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    background: #0f172a;
+  }
+  .ht-page .ht-airport__media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform .45s ease;
   }
-  .ht-page .ht-airport:hover img {
-    transform: scale(1.06);
-  }
-  .ht-page .ht-airport__veil {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(4, 12, 24, .12) 0%, rgba(4, 12, 24, .2) 35%, rgba(4, 12, 24, .9) 100%);
-  }
-  .ht-page .ht-airport::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border: 2px solid transparent;
-    clip-path: inherit;
-    pointer-events: none;
-    transition: border-color .2s ease, box-shadow .2s ease;
-  }
-  .ht-page .ht-airport.is-selected {
-    transform: translateY(-3px);
-  }
-  .ht-page .ht-airport.is-selected::after {
-    border-color: rgba(255, 255, 255, .92);
-    box-shadow: inset 0 0 0 4px rgba(37, 99, 235, .72);
-  }
-  .ht-page .ht-airport__top {
-    position: absolute;
-    top: 11px;
-    right: 12px;
-    left: 12px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: .4rem;
-  }
-  .ht-page .ht-airport__code {
-    font-size: 1.25rem;
-    font-weight: 900;
-    letter-spacing: .04em;
-    line-height: 1;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, .35);
+  .ht-page .ht-airport:hover .ht-airport__media img {
+    transform: scale(1.05);
   }
   .ht-page .ht-airport__tag {
-    padding: .25rem .4rem;
-    border: 1px solid rgba(255, 255, 255, .24);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .14);
-    backdrop-filter: blur(8px);
-    font-size: .56rem;
-    font-weight: 800;
-    letter-spacing: .08em;
-  }
-  .ht-page .ht-airport__tag.is-intl { background: rgba(37, 99, 235, .72); }
-  .ht-page .ht-airport__tag.is-dom { background: rgba(15, 157, 118, .72); }
-  .ht-page .ht-airport__body {
     position: absolute;
-    right: 12px;
-    bottom: 11px;
-    left: 12px;
-    display: flex;
-    flex-direction: column;
+    top: 7px;
+    left: 7px;
+    padding: .2rem .38rem;
+    border: 1px solid rgba(255, 255, 255, .3);
+    border-radius: 999px;
+    color: #fff;
+    font-size: .52rem;
+    font-weight: 800;
+    letter-spacing: .05em;
+    backdrop-filter: blur(8px);
+  }
+  .ht-page .ht-airport__tag.is-intl { background: rgba(37, 99, 235, .78); }
+  .ht-page .ht-airport__tag.is-dom { background: rgba(15, 157, 118, .78); }
+  .ht-page .ht-airport__code {
+    position: absolute;
+    bottom: 7px;
+    left: 7px;
+    padding: .16rem .4rem;
+    border-radius: 7px;
+    color: #fff;
+    background: rgba(7, 20, 38, .62);
+    backdrop-filter: blur(8px);
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .05em;
+  }
+  .ht-page .ht-airport__check {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    color: #1d4ed8;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+  }
+  .ht-page .ht-airport.is-selected .ht-airport__check { display: inline-flex; }
+  .ht-page .ht-airport__body {
+    flex: 0 0 auto;
     min-width: 0;
+    padding: .45rem .55rem .5rem;
+    border-top: 1px solid var(--ht-line);
   }
   .ht-page .ht-airport__name {
+    display: block;
     overflow: hidden;
-    font-size: .94rem;
+    color: var(--ht-ink);
+    font-size: .82rem;
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .ht-page .ht-airport__city {
+    display: block;
     overflow: hidden;
-    margin-top: .15rem;
-    color: rgba(255, 255, 255, .72);
-    font-size: .68rem;
+    margin-top: .1rem;
+    color: var(--ht-muted);
+    font-size: .64rem;
+    line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .ht-page .ht-airport__meta {
-    display: flex;
-    align-items: center;
-    gap: .35rem;
-    margin-top: .35rem;
-    color: rgba(255, 255, 255, .66);
-    font-size: .62rem;
-  }
-  .ht-page .ht-dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: currentColor;
-    opacity: .65;
-  }
-  .ht-page .ht-airport__check {
-    position: absolute;
-    top: 50%;
-    right: 11px;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    color: #1d4ed8;
-    background: #fff;
-    transform: translateY(-50%);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
-  }
-  .ht-page .ht-airport.is-selected .ht-airport__check { display: inline-flex; }
-  .ht-page .ht-airport--empty {
-    min-height: 158px;
-    border: 1px dashed var(--ht-line);
-    background: rgba(15, 35, 63, .035);
-    clip-path: none;
-    filter: none;
-  }
-  [data-bs-theme="dark"] .ht-page .ht-airport--empty {
-    background: rgba(255, 255, 255, .045);
   }
   .ht-page .ht-airport-detail {
     overflow: hidden;
@@ -1148,6 +1056,36 @@ ob_start();
     gap: .3rem;
     white-space: nowrap;
   }
+  .ht-page .ht-table tbody tr.ht-row-link {
+    cursor: pointer;
+  }
+  .ht-page .ht-table tbody tr.ht-row-link:hover > td {
+    background: rgba(37, 99, 235, .06);
+  }
+  .ht-page .ht-terminal-link {
+    color: var(--ht-ink);
+    text-decoration: none;
+  }
+  .ht-page .ht-terminal-link:hover,
+  .ht-page .ht-terminal-link:focus-visible {
+    color: var(--bs-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .ht-page .ht-resource-count {
+    color: inherit;
+    text-decoration: underline dotted rgba(37, 99, 235, .55);
+    text-underline-offset: 2px;
+  }
+  .ht-page .ht-resource-count:hover,
+  .ht-page .ht-resource-count:focus-visible {
+    text-decoration-style: solid;
+    text-decoration-color: var(--bs-primary);
+  }
+  .ht-page .ht-resource-count:hover strong,
+  .ht-page .ht-resource-count:focus-visible strong {
+    color: var(--bs-primary);
+  }
   .ht-page .ht-form-card {
     padding: 1rem;
     margin-bottom: 1rem;
@@ -1169,6 +1107,32 @@ ob_start();
     font-weight: 700;
     letter-spacing: .03em;
     text-transform: uppercase;
+  }
+  .ht-page .ht-upload-preview {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    min-width: 0;
+    padding: .4rem;
+    border: 1px solid var(--ht-line);
+    border-radius: 10px;
+    background: var(--bs-body-bg);
+  }
+  .ht-page .ht-upload-preview img {
+    flex: 0 0 auto;
+    width: 96px;
+    height: 64px;
+    border-radius: 7px;
+    object-fit: contain;
+    background: var(--bs-tertiary-bg);
+  }
+  .ht-page .ht-upload-preview span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ht-muted);
+    font-size: .7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .ht-page .ht-admin-tabs {
     display: flex;
@@ -1206,7 +1170,7 @@ ob_start();
     font-weight: 700;
   }
   @media (max-width: 1199.98px) {
-    .ht-page .ht-airport-row--7 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .ht-page .ht-airport-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
   }
   @media (max-width: 991.98px) {
     .ht-page .ht-airport-detail__image { min-height: 190px; }
@@ -1218,10 +1182,8 @@ ob_start();
   @media (max-width: 767.98px) {
     .ht-page .ht-hero { padding: 1.25rem; border-radius: 18px; }
     .ht-page .ht-hero__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .ht-page .ht-airport-row--4,
-    .ht-page .ht-airport-row--7 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .ht-page .ht-airport,
-    .ht-page .ht-airport-row--7 .ht-airport { min-height: 146px; }
+    .ht-page .ht-airport-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+    .ht-page .ht-airport__name { font-size: .78rem; }
     .ht-page .ht-section-head { align-items: flex-start; flex-direction: column; }
     .ht-page .ht-mini-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ht-page .ht-diagram-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1232,10 +1194,7 @@ ob_start();
     .ht-page .ht-lightbox-nav { width: 38px; height: 38px; font-size: 1rem; }
   }
   @media (max-width: 575.98px) {
-    .ht-page .ht-airport-row--4,
-    .ht-page .ht-airport-row--7 { grid-template-columns: 1fr; }
-    .ht-page .ht-airport,
-    .ht-page .ht-airport-row--7 .ht-airport { min-height: 180px; }
+    .ht-page .ht-airport-grid { grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); }
   }
 </style>
 
@@ -1262,16 +1221,6 @@ ob_start();
           <?= $quanTri ? 'Bạn đang ở chế độ quản trị danh mục hạ tầng.' : 'Dữ liệu được đồng bộ từ danh mục sân bay, nhà ga và tài nguyên khai thác.' ?>
         </p>
       </div>
-      <div class="d-flex flex-wrap gap-2">
-        <a href="<?= $e($manageUrl) ?>" class="btn btn-light btn-sm fw-semibold">
-          <i class="bi bi-sliders me-1"></i> Quản trị hạ tầng
-        </a>
-        <?php if ($quanTri): ?>
-          <a href="<?= $e($viewUrl) ?>" class="btn btn-outline-light btn-sm fw-semibold">
-            <i class="bi bi-eye me-1"></i> Về chế độ xem
-          </a>
-        <?php endif; ?>
-      </div>
     </div>
 
     <div class="ht-hero__stats">
@@ -1293,62 +1242,45 @@ ob_start();
     </div>
   </div>
 
-  <?php foreach ($rowGroups as $group): ?>
-    <div class="ht-row-head">
-      <span><i class="bi <?= $e($group['icon']) ?>"></i> <?= $e($group['label']) ?></span>
-      <span class="ht-row-count"><?= count($group['items']) ?> sân bay</span>
-    </div>
-    <div class="ht-airport-row <?= $e($group['class']) ?>">
-      <?php foreach ($group['items'] as $airport): ?>
-        <?php
-        $isSelected = $selectedAirport && (int) $selectedAirport['id'] === (int) $airport['id'];
-        $isInternational = $airport['phan_cap'] === 'Quoc_Te';
-        $airportLinkParams = ['san_bay' => $airport['ma_iata'], 'khu' => 'chuyen_bay'];
-        if ($quanTri) {
-            unset($airportLinkParams['khu']);
-            $airportLinkParams['quan_tri'] = '1';
-            $airportLinkParams['tab'] = $tab;
-        }
-        ?>
-        <a
-          href="<?= $e($url($airportLinkParams)) ?>"
-          class="ht-airport <?= $isSelected ? 'is-selected' : '' ?>"
-          title="<?= $e($airport['ten_san_bay'] . ' · ' . $airport['vi_tri']) ?>"
-          aria-label="Chọn sân bay <?= $e($airport['ten_san_bay']) ?>"
-        >
+  <div class="ht-airport-grid">
+    <?php foreach ($airports as $airport): ?>
+      <?php
+      $isSelected = $selectedAirport && (int) $selectedAirport['id'] === (int) $airport['id'];
+      $isInternational = $airport['phan_cap'] === 'Quoc_Te';
+      $airportLinkParams = ['san_bay' => $airport['ma_iata'], 'khu' => 'chuyen_bay'];
+      if ($quanTri) {
+          unset($airportLinkParams['khu']);
+          $airportLinkParams['quan_tri'] = '1';
+          $airportLinkParams['tab'] = $tab;
+      }
+      ?>
+      <a
+        href="<?= $e($url($airportLinkParams)) ?>"
+        class="ht-airport <?= $isSelected ? 'is-selected' : '' ?>"
+        title="<?= $e($airport['ten_san_bay'] . ' · ' . $airport['vi_tri']) ?>"
+        aria-label="Chọn sân bay <?= $e($airport['ten_san_bay']) ?>"
+        <?= $isSelected ? 'aria-current="true"' : '' ?>
+      >
+        <span class="ht-airport__media">
           <img
             src="<?= $e($airportImage($airport)) ?>"
             alt="<?= $e($airport['ten_san_bay']) ?>"
             loading="lazy"
             onerror="this.onerror=null;this.src='<?= $e(BASE_URL . '/assets/img/san_bay/' . $airport['ma_iata'] . '.jpg') ?>';"
           />
-          <span class="ht-airport__veil"></span>
-          <span class="ht-airport__top">
-            <span class="ht-airport__code"><?= $e($airport['ma_iata']) ?></span>
-            <span class="ht-airport__tag <?= $isInternational ? 'is-intl' : 'is-dom' ?>">
-              <?= $e($capLabels[$airport['phan_cap']] ?? $airport['phan_cap']) ?>
-            </span>
+          <span class="ht-airport__tag <?= $isInternational ? 'is-intl' : 'is-dom' ?>">
+            <?= $e($capLabels[$airport['phan_cap']] ?? $airport['phan_cap']) ?>
           </span>
-          <span class="ht-airport__body">
-            <span class="ht-airport__name"><?= $e($airport['ten_ngan']) ?></span>
-            <span class="ht-airport__city"><?= $e($airport['ten_san_bay']) ?></span>
-            <span class="ht-airport__meta">
-              <?= (int) $airport['so_nha_ga'] ?> nhà ga
-              <span class="ht-dot"></span>
-              <?= (int) $airport['so_cua_ra'] ?> cửa ra
-            </span>
-          </span>
+          <span class="ht-airport__code"><?= $e($airport['ma_iata']) ?></span>
           <span class="ht-airport__check"><i class="bi bi-check2"></i></span>
-        </a>
-      <?php endforeach; ?>
-      <?php
-      $itemCount = count($group['items']);
-      $targetCount = strpos($group['class'], '--7') !== false ? 7 : 4;
-      for ($i = $itemCount; $i < $targetCount; $i++): ?>
-        <span class="ht-airport ht-airport--empty" aria-hidden="true"></span>
-      <?php endfor; ?>
-    </div>
-  <?php endforeach; ?>
+        </span>
+        <span class="ht-airport__body">
+          <span class="ht-airport__name"><?= $e($airport['ten_ngan']) ?></span>
+          <span class="ht-airport__city"><?= $e($airport['ten_san_bay']) ?></span>
+        </span>
+      </a>
+    <?php endforeach; ?>
+  </div>
 
   <?php if ($selectedAirport): ?>
     <div class="card ht-airport-detail mb-3">
@@ -1403,7 +1335,7 @@ ob_start();
         <p>Thêm, sửa hoặc xóa sân bay, nhà ga và tài nguyên khai thác.</p>
       </div>
       <a href="<?= $e($viewUrl) ?>" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Về chế độ xem
+        <i class="bi bi-arrow-left me-1"></i> Quay lại
       </a>
     </div>
     <?php require __DIR__ . '/_quan_tri.php'; ?>
@@ -1680,6 +1612,39 @@ ob_start();
 
   window.addEventListener('beforeunload', function () {
     saveScrollPosition(false);
+  });
+})();
+</script>
+<script>
+(function () {
+  function interactiveTarget(target) {
+    return target.closest('a, button, input, select, textarea, label, form');
+  }
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (!target || !target.closest) {
+      return;
+    }
+
+    var row = target.closest('tr[data-row-href]');
+    if (!row || event.defaultPrevented || interactiveTarget(target)) {
+      return;
+    }
+    if ((typeof event.button === 'number' && event.button !== 0)
+      || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    var selection = window.getSelection ? String(window.getSelection()) : '';
+    if (selection.length > 0) {
+      return;
+    }
+
+    var href = row.getAttribute('data-row-href');
+    if (href) {
+      window.location.assign(href);
+    }
   });
 })();
 </script>

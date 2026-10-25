@@ -22,6 +22,14 @@ if ($formRecord) {
 $isEdit = $formMode === 'sua';
 $actionName = $isEdit ? 'sua_nha_ga' : 'them_nha_ga';
 
+$soDoPath = trim((string) ($formData['so_do'] ?? ''));
+$soDoPreview = '';
+if ($soDoPath !== '') {
+    $soDoPreview = preg_match('~^https?://~i', $soDoPath)
+        ? $soDoPath
+        : BASE_URL . '/' . ltrim($soDoPath, '/');
+}
+
 $airportGroups = ['Quoc_Te' => [], 'Quoc_Noi' => []];
 foreach ($data['airports'] as $airport) {
     $airportGroups[$airport['phan_cap']][] = $airport;
@@ -37,7 +45,7 @@ $airportGroupLabels = ['Quoc_Te' => 'Cảng hàng không quốc tế', 'Quoc_Noi
     <span class="badge text-bg-light border"><?= $isEdit ? 'Mã: ' . $e($formData['ma_nha_ga']) : 'Nhà ga trực thuộc sân bay' ?></span>
   </div>
 
-  <form method="post" action="<?= $e(BASE_URL . '/index.php?page=ha_tang') ?>">
+  <form method="post" action="<?= $e(BASE_URL . '/index.php?page=ha_tang') ?>" enctype="multipart/form-data">
     <input type="hidden" name="csrf" value="<?= $e($data['csrf']) ?>" />
     <input type="hidden" name="action" value="<?= $e($actionName) ?>" />
     <input type="hidden" name="id" value="<?= (int) $formData['id'] ?>" />
@@ -106,9 +114,22 @@ $airportGroupLabels = ['Quoc_Te' => 'Cảng hàng không quốc tế', 'Quoc_Noi
       </div>
 
       <div class="col-md-6">
-        <label class="form-label" for="ng-so-do">Sơ đồ nhà ga</label>
-        <input type="text" class="form-control form-control-sm" id="ng-so-do" name="so_do" value="<?= $e($formData['so_do']) ?>" maxlength="255" placeholder="assets/img/so_do_nha_ga/HAN-T1.png" />
-        <div class="form-text">Đường dẫn ảnh sơ đồ (không bắt buộc).</div>
+        <label class="form-label" for="ng-so-do">Ảnh sơ đồ nhà ga</label>
+        <input type="file" class="form-control form-control-sm" id="ng-so-do" name="so_do_file" accept="image/jpeg,image/png,image/webp" />
+        <div class="form-text">
+          Chọn tệp JPG, PNG hoặc WebP, tối đa 5 MB.
+          <?= $isEdit && $soDoPreview !== '' ? 'Để trống nếu muốn giữ ảnh hiện tại.' : '' ?>
+        </div>
+        <?php if ($soDoPreview !== ''): ?>
+          <div class="ht-upload-preview mt-2">
+            <img src="<?= $e($soDoPreview) ?>" alt="Ảnh sơ đồ hiện tại của <?= $e($formData['ten_nha_ga']) ?>" />
+            <span>Ảnh hiện tại</span>
+          </div>
+        <?php endif; ?>
+        <div class="ht-upload-preview mt-2 d-none" data-ht-upload-preview>
+          <img src="" alt="Ảnh sơ đồ vừa chọn" />
+          <span data-ht-upload-name>Ảnh vừa chọn</span>
+        </div>
       </div>
 
       <div class="col-12">
@@ -124,4 +145,51 @@ $airportGroupLabels = ['Quoc_Te' => 'Cảng hàng không quốc tế', 'Quoc_Noi
       <a href="<?= $e($listUrl) ?>" class="btn btn-outline-secondary btn-sm">Hủy</a>
     </div>
   </form>
+
+  <script>
+  (function () {
+    var input = document.getElementById('ng-so-do');
+    var preview = document.querySelector('[data-ht-upload-preview]');
+    if (!input || !preview) {
+      return;
+    }
+
+    var image = preview.querySelector('img');
+    var name = preview.querySelector('[data-ht-upload-name]');
+    var objectUrl = null;
+    var allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    input.addEventListener('change', function () {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+
+      var file = input.files && input.files[0];
+      if (!file) {
+        preview.classList.add('d-none');
+        return;
+      }
+
+      if (file.type && allowedTypes.indexOf(file.type) === -1) {
+        input.value = '';
+        preview.classList.add('d-none');
+        window.alert('Vui lòng chọn ảnh JPG, PNG hoặc WebP.');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        input.value = '';
+        preview.classList.add('d-none');
+        window.alert('Ảnh sơ đồ không được vượt quá 5 MB.');
+        return;
+      }
+
+      objectUrl = URL.createObjectURL(file);
+      image.src = objectUrl;
+      name.textContent = file.name;
+      preview.classList.remove('d-none');
+    });
+  })();
+  </script>
 </div>

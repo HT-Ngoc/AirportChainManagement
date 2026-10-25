@@ -9,7 +9,7 @@ $tabMeta = [
     'nha_ga' => [
         'label' => 'Nhà ga',
         'icon' => 'bi-door-open',
-        'desc' => 'Nhà ga trực thuộc sân bay đang chọn.',
+        'desc' => 'Nhấn vào một nhà ga để chọn và xem cửa ra, quầy check-in, băng chuyền.',
         'add' => 'Thêm nhà ga',
     ],
     'cua_ra' => [
@@ -92,9 +92,6 @@ $addUrl = $adminUrl(array_merge($tabParams, ['them' => 1]));
       </span>
     <?php endif; ?>
   </div>
-  <a href="<?= $e($adminUrl(['tab' => 'san_bay'])) ?>" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-building me-1"></i> Danh mục sân bay
-  </a>
 </div>
 
 <div class="ht-admin-tabs">

@@ -13,7 +13,6 @@ $formData = [
     'vi_tri' => '',
     'hinh_anh' => '',
     'mo_ta' => '',
-    'thu_tu_hien_thi' => 0,
     'trang_thai' => 'Hoat_Dong',
 ];
 if ($formRecord) {
@@ -71,14 +70,10 @@ $actionName = $isEdit ? 'sua_san_bay' : 'them_san_bay';
         <input type="text" class="form-control form-control-sm" id="sb-vi-tri" name="vi_tri" value="<?= $e($formData['vi_tri']) ?>" maxlength="255" placeholder="Huyện Sóc Sơn, Hà Nội" required />
       </div>
 
-      <div class="col-md-6">
+      <div class="col-md-9">
         <label class="form-label" for="sb-hinh">Ảnh sân bay</label>
         <input type="text" class="form-control form-control-sm" id="sb-hinh" name="hinh_anh" value="<?= $e($formData['hinh_anh']) ?>" maxlength="255" placeholder="assets/img/san_bay/HAN.jpg" />
         <div class="form-text">Để trống sẽ dùng ảnh mặc định theo mã IATA.</div>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label" for="sb-thu-tu">Thứ tự hiển thị</label>
-        <input type="number" class="form-control form-control-sm" id="sb-thu-tu" name="thu_tu_hien_thi" value="<?= (int) $formData['thu_tu_hien_thi'] ?>" min="0" step="1" />
       </div>
       <div class="col-md-3">
         <label class="form-label" for="sb-trang-thai">Trạng thái</label>

@@ -29,11 +29,28 @@ $items = $data['terminals'];
       </tr>
     <?php else: ?>
       <?php foreach ($items as $item): ?>
-        <?php $isSelected = $selectedTerminal && (int) $selectedTerminal['id'] === (int) $item['id']; ?>
-        <tr class="<?= $isSelected ? 'table-active' : '' ?>">
+        <?php
+        $isSelected = $selectedTerminal && (int) $selectedTerminal['id'] === (int) $item['id'];
+        $resourceParams = ['san_bay' => $airport['ma_iata'], 'nha_ga' => (int) $item['id']];
+        $selectUrl = $adminUrl(array_merge(['tab' => 'nha_ga'], $resourceParams));
+        $gatesUrl = $adminUrl(array_merge(['tab' => 'cua_ra'], $resourceParams));
+        $checkinsUrl = $adminUrl(array_merge(['tab' => 'quay'], $resourceParams));
+        $beltsUrl = $adminUrl(array_merge(['tab' => 'bang_chuyen'], $resourceParams));
+        ?>
+        <tr class="<?= $isSelected ? 'table-active ' : '' ?>ht-row-link" data-row-href="<?= $e($selectUrl) ?>">
           <td><span class="badge text-bg-secondary"><?= $e($item['ma_nha_ga']) ?></span></td>
           <td>
-            <div class="fw-semibold"><?= $e($item['ten_nha_ga']) ?></div>
+            <a
+              href="<?= $e($selectUrl) ?>"
+              class="ht-terminal-link fw-semibold"
+              title="Chọn nhà ga <?= $e($item['ten_nha_ga']) ?> để xem tài nguyên"
+              <?= $isSelected ? 'aria-current="true"' : '' ?>
+            >
+              <?= $e($item['ten_nha_ga']) ?>
+            </a>
+            <?php if ($isSelected): ?>
+              <span class="badge text-bg-primary ms-1">Đang chọn</span>
+            <?php endif; ?>
             <?php if (!empty($item['mo_ta'])): ?>
               <span class="ht-soft-label"><?= $e($item['mo_ta']) ?></span>
             <?php endif; ?>
@@ -47,8 +64,20 @@ $items = $data['terminals'];
             <span class="ht-soft-label">CS: <strong><?= !empty($item['cong_suat']) ? $e($item['cong_suat']) : '—' ?></strong></span>
           </td>
           <td>
-            <span class="ht-soft-label"><?= (int) $item['so_cua_ra'] ?> cửa · <?= (int) $item['so_quay_checkin'] ?> quầy</span>
-            <span class="ht-soft-label"><?= (int) $item['so_bang_chuyen'] ?> băng chuyền</span>
+            <span class="ht-soft-label">
+              <a class="ht-resource-count" href="<?= $e($gatesUrl) ?>" title="Xem cửa ra của <?= $e($item['ten_nha_ga']) ?>">
+                <strong><?= (int) $item['so_cua_ra'] ?></strong> cửa
+              </a>
+              ·
+              <a class="ht-resource-count" href="<?= $e($checkinsUrl) ?>" title="Xem quầy check-in của <?= $e($item['ten_nha_ga']) ?>">
+                <strong><?= (int) $item['so_quay_checkin'] ?></strong> quầy
+              </a>
+            </span>
+            <span class="ht-soft-label">
+              <a class="ht-resource-count" href="<?= $e($beltsUrl) ?>" title="Xem băng chuyền của <?= $e($item['ten_nha_ga']) ?>">
+                <strong><?= (int) $item['so_bang_chuyen'] ?></strong> băng chuyền
+              </a>
+            </span>
           </td>
           <td><?= $statusBadge($item['trang_thai']) ?></td>
           <td>

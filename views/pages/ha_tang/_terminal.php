@@ -20,7 +20,6 @@ $manageTerminalUrl = $url($manageTerminalParams);
 $manageGatesUrl = $url(['quan_tri' => '1', 'tab' => 'cua_ra', 'san_bay' => $airport['ma_iata'], 'nha_ga' => $terminal['id'] ?? 0]);
 $manageCheckinsUrl = $url(['quan_tri' => '1', 'tab' => 'quay', 'san_bay' => $airport['ma_iata'], 'nha_ga' => $terminal['id'] ?? 0]);
 $manageBeltsUrl = $url(['quan_tri' => '1', 'tab' => 'bang_chuyen', 'san_bay' => $airport['ma_iata'], 'nha_ga' => $terminal['id'] ?? 0]);
-$addTerminalUrl = $url(['quan_tri' => '1', 'tab' => 'nha_ga', 'san_bay' => $airport['ma_iata'], 'them' => 1]);
 $diagramImage = $terminal ? $imageUrl($terminal['so_do'] ?? '') : '';
 
 $diagramCaptions = [
@@ -37,18 +36,74 @@ $diagramCaptions = [
     'HAN-T2-05.jpg' => 'Tầng 3 · Luồng thoát hiểm',
     'HAN-T2-06.jpg' => 'Tầng 3 · Cửa ra tàu bay',
     'HAN-T2-07.jpg' => 'Tầng 4 · Phòng chờ thương gia',
+    'CXR-T1-01.jpg' => 'Sơ đồ các tầng nhà ga',
+    'CXR-T2-01.jpg' => 'Mặt bằng hiện trạng tầng 1 & tầng 2',
+    'VCA-T1-01.jpg' => 'Tầng 1 · Ga đi',
+    'HPH-T1-01.jpg' => 'Sơ đồ tổng thể nhà ga hành khách',
+    'PQC-T1-01.jpg' => 'Tầng trệt · Ga đến và trả hành lý',
+    'PQC-T1-02.jpg' => 'Tầng 1 · Ga đi và check-in',
+    'SGN-T1-01.jpg' => 'Ga đi quốc nội · Tầng 1 & tầng trệt',
+    'SGN-T1-02.jpg' => 'Ga đến quốc nội · Tầng trệt',
+    'SGN-T2-01.jpg' => 'Ga đi quốc tế · Tầng 1, 2 & 3',
+    'SGN-T2-02.jpg' => 'Ga đến quốc tế · Tầng trệt & tầng 1',
+    'SGN-T3-01.jpg' => 'Tầng 2 · Mặt bằng nhà ga',
+    'SGN-T3-02.jpg' => 'Tầng 3 · Mặt bằng nhà ga',
+    'SGN-T3-03.jpg' => 'Tầng 4 · Phòng chờ thương gia',
+    'DAD-T1-01.jpg' => 'Ga đến · Tầng trệt',
+    'DAD-T3-01.jpg' => 'Ga đi · Tầng trệt',
 ];
 
-$diagramSourceUrls = [
-    'HAN-T1' => 'https://noibaiairport.vn/Nha-ga-hanh-khach-quoc-noi-T1--nid15.html',
-    'HAN-T2' => 'https://noibaiairport.vn/Nha-ga-hanh-khach-quoc-te-T2--nid13.html',
+$diagramSources = [
+    'HAN-T1' => [
+        'url' => 'https://noibaiairport.vn/Nha-ga-hanh-khach-quoc-noi-T1--nid15.html',
+        'label' => 'Cảng HKQT Nội Bài',
+    ],
+    'HAN-T2' => [
+        'url' => 'https://noibaiairport.vn/Nha-ga-hanh-khach-quoc-te-T2--nid13.html',
+        'label' => 'Cảng HKQT Nội Bài',
+    ],
+    'VCA-T1' => [
+        'url' => 'https://taxisanbayre.com/so-do-nha-ga-hanh-khach-san-bay-can-tho/',
+        'label' => 'Taxi sân bay rẻ',
+    ],
+    'PQC-T1' => [
+        'url' => 'https://vinwonders.com/vi/wonderpedia/news/san-bay-phu-quoc-o-dau/',
+        'label' => 'VinWonders',
+    ],
+    'SGN-T1' => [
+        'url' => 'https://dienmaycholon.com/kinh-nghiem-mua-sam/so-do-san-bay-tan-son-nhat-chi-tiet',
+        'label' => 'Điện Máy Chợ Lớn',
+    ],
+    'SGN-T2' => [
+        'url' => 'https://dienmaycholon.com/kinh-nghiem-mua-sam/so-do-san-bay-tan-son-nhat-chi-tiet',
+        'label' => 'Điện Máy Chợ Lớn',
+    ],
+    'SGN-T3' => [
+        'url' => 'https://dienmaycholon.com/kinh-nghiem-mua-sam/so-do-san-bay-tan-son-nhat-chi-tiet',
+        'label' => 'Điện Máy Chợ Lớn',
+    ],
+    'HPH-T1' => [
+        'url' => '',
+        'label' => 'Người dùng cung cấp',
+    ],
+    'DAD-T1' => [
+        'url' => '',
+        'label' => 'Người dùng cung cấp',
+    ],
+    'DAD-T3' => [
+        'url' => '',
+        'label' => 'Người dùng cung cấp',
+    ],
 ];
 
 $diagramSourceUrl = '';
+$diagramSourceLabel = '';
 $diagramGallery = [];
 if ($terminal) {
     $diagramSourceKey = $airport['ma_iata'] . '-' . $terminal['ma_nha_ga'];
-    $diagramSourceUrl = $diagramSourceUrls[$diagramSourceKey] ?? '';
+    $diagramSource = $diagramSources[$diagramSourceKey] ?? [];
+    $diagramSourceUrl = $diagramSource['url'] ?? '';
+    $diagramSourceLabel = $diagramSource['label'] ?? '';
     $diagramDir = dirname(__DIR__, 3) . '/assets/img/so_do_nha_ga';
     $diagramFiles = glob($diagramDir . '/' . $diagramSourceKey . '-*.jpg') ?: [];
     sort($diagramFiles, SORT_NATURAL | SORT_FLAG_CASE);
@@ -68,6 +123,27 @@ if ($terminal) {
             'thumb' => $imageUrl('assets/img/so_do_nha_ga/' . (is_file($thumbPath) ? $thumbName : $diagramName)),
         ];
     }
+
+    if ($diagramImage !== '') {
+        $alreadyListed = false;
+        foreach ($diagramGallery as $diagram) {
+            if ($diagram['image'] === $diagramImage) {
+                $alreadyListed = true;
+                break;
+            }
+        }
+
+        if (!$alreadyListed) {
+            $diagramPath = parse_url($diagramImage, PHP_URL_PATH);
+            $diagramName = $diagramPath ? basename($diagramPath) : basename($diagramImage);
+            array_unshift($diagramGallery, [
+                'name' => $diagramName,
+                'caption' => 'Sơ đồ nhà ga',
+                'image' => $diagramImage,
+                'thumb' => $diagramImage,
+            ]);
+        }
+    }
 }
 ?>
 <div class="card ht-panel">
@@ -81,9 +157,6 @@ if ($terminal) {
         <a href="<?= $e($manageTerminalUrl) ?>" class="btn btn-outline-primary btn-sm">
           <i class="bi bi-pencil-square me-1"></i> Quản lý nhà ga
         </a>
-        <a href="<?= $e($addTerminalUrl) ?>" class="btn btn-primary btn-sm">
-          <i class="bi bi-plus-lg me-1"></i> Thêm nhà ga
-        </a>
       </div>
     </div>
   </div>
@@ -93,10 +166,7 @@ if ($terminal) {
       <div class="ht-empty border-0">
         <i class="bi bi-door-closed"></i>
         <h3>Sân bay chưa có nhà ga</h3>
-        <p>Thêm nhà ga đầu tiên để bắt đầu cấu hình cửa ra máy bay, quầy check-in và băng chuyền hành lý.</p>
-        <a href="<?= $e($addTerminalUrl) ?>" class="btn btn-primary btn-sm mt-3">
-          <i class="bi bi-plus-lg me-1"></i> Thêm nhà ga
-        </a>
+        <p>Thêm nhà ga đầu tiên trong khu vực quản trị để bắt đầu cấu hình cửa ra máy bay, quầy check-in và băng chuyền hành lý.</p>
       </div>
     </div>
   <?php else: ?>
@@ -282,38 +352,18 @@ if ($terminal) {
                       </a>
                     <?php endforeach; ?>
                   </div>
-                  <?php if ($diagramSourceUrl !== ''): ?>
+                  <?php if ($diagramSourceLabel !== ''): ?>
                     <div class="ht-diagram-source">
                       Nguồn ảnh:
-                      <a href="<?= $e($diagramSourceUrl) ?>" target="_blank" rel="noopener">Cảng HKQT Nội Bài</a>
-                      · Sử dụng cho mục đích học tập.
+                      <?php if ($diagramSourceUrl !== ''): ?>
+                        <a href="<?= $e($diagramSourceUrl) ?>" target="_blank" rel="noopener"><?= $e($diagramSourceLabel) ?></a>
+                      <?php else: ?>
+                        <?= $e($diagramSourceLabel) ?>
+                      <?php endif; ?>
                     </div>
                   <?php endif; ?>
-                <?php elseif ($diagramImage !== ''): ?>
-                  <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                    <div class="ht-eyebrow text-secondary">Ảnh sơ đồ nhà ga</div>
-                    <span class="badge text-bg-light"><?= $e($terminal['ma_nha_ga']) ?></span>
-                  </div>
-                  <img
-                    src="<?= $e($diagramImage) ?>"
-                    alt="Sơ đồ nhà ga <?= $e($terminal['ten_nha_ga']) ?>"
-                    class="img-fluid w-100 rounded-3 border"
-                    onerror="this.onerror=null;this.classList.add('d-none');"
-                  />
                 <?php endif; ?>
-              </div>
-
-              <div class="alert alert-info d-flex gap-2 align-items-start mt-3 mb-0 py-2 px-3 small">
-                <i class="bi bi-info-circle mt-1"></i>
-                <div>
-                  Sơ đồ trên được tạo tự động từ danh mục cửa ra, quầy check-in và băng chuyền trong cơ sở dữ liệu.
-                  <?php if ($diagramGallery || $diagramImage !== ''): ?>
-                    Ảnh sơ đồ tham khảo nằm ở cuối thẻ này; bấm ảnh để xem lớn, thu phóng hoặc chuyển ảnh.
-                  <?php else: ?>
-                    Chưa có ảnh sơ đồ tham khảo; có thể cập nhật trường “Sơ đồ nhà ga” khi có tài liệu.
-                  <?php endif; ?>
-                </div>
-              </div>
+              </div> 
             </div>
           </div>
         </div>
@@ -359,11 +409,14 @@ if ($terminal) {
                 <i class="bi bi-zoom-in"></i>
               </button>
             </div>
-            <?php if ($diagramSourceUrl !== ''): ?>
+            <?php if ($diagramSourceLabel !== ''): ?>
               <div class="ht-lightbox-source">
                 Nguồn:
-                <a href="<?= $e($diagramSourceUrl) ?>" target="_blank" rel="noopener">Cảng HKQT Nội Bài</a>
-                · Sử dụng cho mục đích học tập.
+                <?php if ($diagramSourceUrl !== ''): ?>
+                  <a href="<?= $e($diagramSourceUrl) ?>" target="_blank" rel="noopener"><?= $e($diagramSourceLabel) ?></a>
+                <?php else: ?>
+                  <?= $e($diagramSourceLabel) ?>
+                <?php endif; ?>
               </div>
             <?php endif; ?>
           </div>
