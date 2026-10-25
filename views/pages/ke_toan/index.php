@@ -262,6 +262,44 @@ ob_start();
     </div>
 </div>
 
+<!--PHẦN 5: THỐNG KÊ HÀNH KHÁCH THEO SÂN BAY-->
+<div class="row mt-3 mb-5">
+    <div class="col-12">
+        <div class="card card-secondary card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-people me-2"></i>Thống kê sản lượng hành khách theo Sân bay</h3>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3 align-items-center">
+                    <input type="hidden" name="page" value="ke_toan">
+                    <div class="col-auto">
+                        <label class="col-form-label fw-bold">Chọn sân bay:</label>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="san_bay" class="form-select" required>
+                            <option value="">-- Chọn sân bay để thống kê --</option>
+                            <?php foreach ($danh_sach_san_bay as $sb): ?>
+                                <option value="<?= $sb['id'] ?>" <?= ($san_bay_chon == $sb['id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($sb['ten_san_bay']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Thống kê</button>
+                    </div>
+                </form>
+
+                <?php if ($san_bay_chon > 0): ?>
+                    <div class="alert alert-info mt-4 text-center">
+                        <h4 class="mb-0">Tổng sản lượng hành khách (Đi + Đến): <strong>
+                            <?= number_format($tong_khach_san_bay) ?></strong> lượt khách</h4>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php
 $content = ob_get_clean();
