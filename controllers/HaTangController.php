@@ -63,21 +63,9 @@ class HaTangController
             $management = $this->getManagement($tab, $airports, $selectedAirport, $terminals, $selectedTerminal, $gates, $checkins, $belts);
         }
 
-        $domestic = [];
-        $international = [];
-        foreach ($airports as $airport) {
-            if ($airport['phan_cap'] === 'Quoc_Te') {
-                $international[] = $airport;
-            } else {
-                $domestic[] = $airport;
-            }
-        }
-
         return [
             'airports' => $airports,
             'airportByIata' => $airportByIata,
-            'domesticRows' => array_chunk($domestic, 4),
-            'internationalRows' => array_chunk($international, 7),
             'selectedAirport' => $selectedAirport,
             'terminals' => $terminals,
             'selectedTerminal' => $selectedTerminal,
@@ -114,7 +102,7 @@ class HaTangController
                         JOIN nha_ga ng4 ON ng4.id = b.id_nha_ga
                         WHERE ng4.id_san_bay = sb.id) AS so_bang_chuyen
                 FROM san_bay sb
-                ORDER BY sb.phan_cap, sb.thu_tu_hien_thi ASC, sb.ten_san_bay ASC";
+                ORDER BY sb.phan_cap, sb.ten_san_bay ASC";
 
         return $this->fetchAll($this->query($sql));
     }
@@ -468,7 +456,6 @@ class HaTangController
         $viTri = trim((string) ($_POST['vi_tri'] ?? ''));
         $hinhAnh = trim((string) ($_POST['hinh_anh'] ?? ''));
         $moTa = trim((string) ($_POST['mo_ta'] ?? ''));
-        $thuTu = (int) ($_POST['thu_tu_hien_thi'] ?? 0);
         $trangThai = (string) ($_POST['trang_thai'] ?? 'Hoat_Dong');
 
         $errors = [];
@@ -515,17 +502,17 @@ class HaTangController
         if ($isEdit) {
             $sql = "UPDATE san_bay
                     SET ma_iata = ?, ma_icao = ?, ten_san_bay = ?, ten_ngan = ?, phan_cap = ?,
-                        vi_tri = ?, hinh_anh = ?, mo_ta = ?, thu_tu_hien_thi = ?, trang_thai = ?
+                        vi_tri = ?, hinh_anh = ?, mo_ta = ?, trang_thai = ?
                     WHERE id = ?";
-            $types = 'ssssssssisi';
-            $params = [$iata, $icao, $ten, $tenNgan, $phanCap, $viTri, $hinhAnh, $moTa, $thuTu, $trangThai, $id];
+            $types = 'sssssssssi';
+            $params = [$iata, $icao, $ten, $tenNgan, $phanCap, $viTri, $hinhAnh, $moTa, $trangThai, $id];
             $label = 'sân bay';
         } else {
             $sql = "INSERT INTO san_bay
-                    (ma_iata, ma_icao, ten_san_bay, ten_ngan, phan_cap, vi_tri, hinh_anh, mo_ta, thu_tu_hien_thi, trang_thai)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $types = 'ssssssssis';
-            $params = [$iata, $icao, $ten, $tenNgan, $phanCap, $viTri, $hinhAnh, $moTa, $thuTu, $trangThai];
+                    (ma_iata, ma_icao, ten_san_bay, ten_ngan, phan_cap, vi_tri, hinh_anh, mo_ta, trang_thai)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $types = 'sssssssss';
+            $params = [$iata, $icao, $ten, $tenNgan, $phanCap, $viTri, $hinhAnh, $moTa, $trangThai];
             $label = 'sân bay';
         }
 
@@ -561,7 +548,7 @@ class HaTangController
         $nam = trim((string) ($_POST['nam_khai_thac'] ?? ''));
         $dienTich = trim((string) ($_POST['dien_tich'] ?? ''));
         $congSuat = trim((string) ($_POST['cong_suat'] ?? ''));
-        $soDo = trim((string) ($_POST['so_do'] ?? ''));
+        $soDo = '';
         $moTa = trim((string) ($_POST['mo_ta'] ?? ''));
         $trangThai = (string) ($_POST['trang_thai'] ?? 'Hoat_Dong');
 
@@ -588,9 +575,76 @@ class HaTangController
             $errors[] = 'Không xác định được nhà ga cần sửa.';
         }
 
+        $upload = null;
+        if (isset($_FILES['so_do_file']) && is_array($_FILES['so_do_file'])) {
+            $file = $_FILES['so_do_file'];
+            $uploadError = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+
+            if ($uploadError !== UPLOAD_ERR_NO_FILE) {
+                $tmpName = (string) ($file['tmp_name'] ?? '');
+                $fileSize = (int) ($file['size'] ?? 0);
+
+                if ($uploadError !== UPLOAD_ERR_OK) {
+                    $errors[] = 'Không thể tải ảnh sơ đồ lên (mã lỗi ' . $uploadError . ').';
+                } elseif (!is_uploaded_file($tmpName)) {
+                    $errors[] = 'Tệp ảnh sơ đồ không hợp lệ.';
+                } elseif ($fileSize <= 0 || $fileSize > 5 * 1024 * 1024) {
+                    $errors[] = 'Ảnh sơ đồ phải có dung lượng từ 1 byte đến 5 MB.';
+                } else {
+                    $mime = '';
+                    if (class_exists('finfo')) {
+                        $finfo = new finfo(FILEINFO_MIME_TYPE);
+                        $mime = (string) $finfo->file($tmpName);
+                    } elseif (function_exists('mime_content_type')) {
+                        $mime = (string) mime_content_type($tmpName);
+                    }
+
+                    $allowedMimes = [
+                        'image/jpeg' => 'jpg',
+                        'image/png' => 'png',
+                        'image/webp' => 'webp',
+                    ];
+
+                    if (!isset($allowedMimes[$mime]) || @getimagesize($tmpName) === false) {
+                        $errors[] = 'Ảnh sơ đồ phải là tệp JPG, PNG hoặc WebP hợp lệ.';
+                    } else {
+                        $upload = [
+                            'tmp_name' => $tmpName,
+                            'extension' => $allowedMimes[$mime],
+                        ];
+                    }
+                }
+            }
+        }
+
         if ($errors) {
             $this->setFlash('danger', implode(' ', $errors));
             return;
+        }
+
+        $oldSoDo = $isEdit ? $this->getTerminalDiagramPath($id) : '';
+        $newUploadPath = '';
+        if ($upload !== null) {
+            $relativeDir = 'assets/uploads/nha_ga';
+            $absoluteDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'nha_ga';
+
+            if (!is_dir($absoluteDir) && !@mkdir($absoluteDir, 0775, true) && !is_dir($absoluteDir)) {
+                $this->setFlash('danger', 'Không thể tạo thư mục lưu ảnh sơ đồ.');
+                return;
+            }
+
+            $fileName = 'nha_ga_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $upload['extension'];
+            $destination = $absoluteDir . DIRECTORY_SEPARATOR . $fileName;
+
+            if (!move_uploaded_file($upload['tmp_name'], $destination)) {
+                $this->setFlash('danger', 'Không thể lưu ảnh sơ đồ vừa tải lên.');
+                return;
+            }
+
+            $soDo = $relativeDir . '/' . $fileName;
+            $newUploadPath = $soDo;
+        } elseif ($isEdit) {
+            $soDo = $oldSoDo;
         }
 
         $namValue = $nam === '' ? null : (int) $nam;
@@ -615,12 +669,25 @@ class HaTangController
         }
 
         if ($this->executeWrite($sql, $types, $params, 'nhà ga')) {
+            if ($newUploadPath !== '' && $oldSoDo !== '' && $oldSoDo !== $newUploadPath
+                && strpos($oldSoDo, 'assets/uploads/nha_ga/') === 0) {
+                $oldAbsolute = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $oldSoDo);
+                if (is_file($oldAbsolute)) {
+                    @unlink($oldAbsolute);
+                }
+            }
+
             $savedId = $isEdit ? $id : (int) $this->conn->insert_id;
             $context = $this->getTerminalContext($savedId);
             if ($context) {
                 $this->setReturnContext($context['ma_iata'], $context['id']);
             } else {
                 $this->setReturnContext($this->getAirportIata($airportId), 0);
+            }
+        } elseif ($newUploadPath !== '') {
+            $newAbsolute = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $newUploadPath);
+            if (is_file($newAbsolute)) {
+                @unlink($newAbsolute);
             }
         }
     }
@@ -824,6 +891,20 @@ class HaTangController
             $row = $stmt->get_result()->fetch_assoc();
 
             return $row ? (string) $row['ma_iata'] : '';
+        } catch (Throwable $e) {
+            return '';
+        }
+    }
+
+    private function getTerminalDiagramPath($terminalId)
+    {
+        try {
+            $stmt = $this->prepare("SELECT so_do FROM nha_ga WHERE id = ? LIMIT 1");
+            $this->bind($stmt, 'i', [$terminalId]);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+
+            return $row ? trim((string) ($row['so_do'] ?? '')) : '';
         } catch (Throwable $e) {
             return '';
         }
