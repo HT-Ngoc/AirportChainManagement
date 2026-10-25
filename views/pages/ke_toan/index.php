@@ -193,6 +193,75 @@ ob_start();
     </div>
 </div>
 
+<!--PHẦN 4: BÁO CÁO TÀI CHÍNH-->
+<div class="row mt-4">
+    <!--BẢNG 1: DOANH THU THEO THÁNG-->
+    <div class="col-md-6">
+        <div class="card card-success card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-graph-up me-2"></i>Doanh thu theo tháng</h3>
+            </div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tháng</th>
+                            <th class="text-end">Tổng Doanh Thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if(empty($data_thang)): ?>
+                            <tr><td colspan="2" class="text-center text-muted">Chưa có dữ liệu doanh thu</td></tr>
+                        <?php endif; ?>
+                        
+                        <?php foreach ($data_thang as $dt): ?>
+                        <tr>
+                            <td>Tháng <?= $dt['thang'] ?></td>
+                            <td class="text-end fw-bold text-success">
+                                <?= number_format($dt['tong_doanh_thu']) ?> VNĐ
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!--BẢNG 2: DOANH THU THEO HÃNG HÀNG KHÔNG-->
+    <div class="col-md-6">
+        <div class="card card-info card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-airplane me-2"></i>Doanh thu theo Hãng Hàng Không</h3>
+            </div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Hãng Hàng Không</th>
+                            <th class="text-end">Doanh Thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if(empty($data_hang)): ?>
+                            <tr><td colspan="2" class="text-center text-muted">Chưa có dữ liệu đối tác</td></tr>
+                        <?php endif; ?>
+
+                        <?php foreach ($data_hang as $hh): ?>
+                        <tr>
+                            <td><strong><?= htmlspecialchars($hh['ten_hang']) ?></strong></td>
+                            <td class="text-end fw-bold text-primary">
+                                <?= number_format($hh['doanh_thu']) ?> VNĐ
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <?php
 $content = ob_get_clean();
