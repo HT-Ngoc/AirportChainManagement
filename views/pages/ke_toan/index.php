@@ -60,7 +60,65 @@ $breadcrumb = [
 ob_start();
 ?>
 
+<!--PHẦN 1: THỐNG KÊ NHANH-->
+<div class="row">
+    <!--Doanh thu-->
+    <div class="col">
+        <div class="small-box text-bg-primary">
+            <div class="inner">
+                <h3><?= number_format($stats['doanh_thu_thang'] / 1000000, 1) ?> Tr</h3>
+                <p>Doanh thu tháng</p>
+            </div>
+            <i class="small-box-icon bi bi-graph-up-arrow"></i>
+        </div>
+    </div>
+    
+    <!--Hóa đơn đã thu-->
+    <div class="col">
+        <div class="small-box text-bg-success">
+            <div class="inner">
+                <h3><?= $stats['hd_da_thu'] ?></h3>
+                <p>Hóa đơn đã thu</p>
+            </div>
+            <i class="small-box-icon bi bi-receipt"></i>
+        </div>
+    </div>
+    
+    <!--Hóa đơn chờ thu-->
+    <div class="col">
+        <div class="small-box text-bg-warning">
+            <div class="inner">
+                <h3><?= $stats['hd_chua_thu'] ?></h3>
+                <p>Hóa đơn chờ thu</p>
+            </div>
+            <i class="small-box-icon bi bi-hourglass-split"></i>
+        </div>
+    </div>
+    
+    <!--Công nợ quá hạn-->
+    <div class="col">
+        <div class="small-box text-bg-danger">
+            <div class="inner">
+                <h3><?= number_format($stats['no_qua_han'] / 1000000, 1) ?> Tr</h3>
+                <p>Công nợ quá hạn</p>
+            </div>
+            <i class="small-box-icon bi bi-exclamation-triangle"></i>
+        </div>
+    </div>
 
+    <!--Số chuyến bay trong ngày-->
+    <div class="col">
+        <div class="small-box text-bg-info">
+            <div class="inner">
+                <h3><?= $stats['chuyen_bay_trong_ngay'] ?></h3>
+                <p>Chuyến bay trong ngày</p>
+            </div>
+            <i class="small-box-icon bi bi-airplane"></i>
+        </div>
+    </div>
+</div>
+
+<div class="row">
     <!--PHẦN 2: QUẢN LÝ BIỂU PHÍ-->
     <div class="col-md-4">
         <div class="card card-primary card-outline">

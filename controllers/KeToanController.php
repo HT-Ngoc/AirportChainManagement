@@ -170,6 +170,31 @@ class KeToanController {
         return mysqli_query($this->conn, $sql);
     }
 
+//4. THỐNG KÊ SÂN BAY
 
+// Lấy danh sách sân bay
+    public function DanhSachSanBay() {
+        $sql = "SELECT * FROM san_bay";
+        $result = mysqli_query($this->conn, $sql);
+        $data = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data[] = $row;
+            }
+        }
+        return $data;
+    }
+
+// Thống kê tổng hành khách qua sân bay
+    public function ThongKeHanhKhachSanBay($id_san_bay) {
+        $id_san_bay = (int)$id_san_bay;
+        $sql = "SELECT SUM(luong_hanh_khach) as tong_khach 
+                FROM chuyen_bay_ngay 
+                WHERE (id_san_bay_di = $id_san_bay OR id_san_bay_den = $id_san_bay)
+                AND trang_thai_tong = 'Hoan_Thanh'";
+        $result = mysqli_query($this->conn, $sql);
+        $row = mysqli_fetch_assoc($result);
+        return $row['tong_khach'] ?? 0;
+    }
 }
 ?>
