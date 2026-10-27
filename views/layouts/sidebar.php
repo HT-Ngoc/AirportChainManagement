@@ -10,7 +10,8 @@
  * ============================================================
  */
 
-$navActive   = $navActive ?? '';
+$navActive    = $navActive ?? '';
+$navSubActive = $navSubActive ?? '';
 
 // Nạp cấu hình dùng chung (BASE_URL, ADMINLTE_URL)
 require_once __DIR__ . '/../../config/config.php';
@@ -20,6 +21,11 @@ $adminLteUrl = $adminLteUrl ?? ADMINLTE_URL;
 /** Tiện ích: trả về ' active' nếu menu đang được chọn */
 $isActive = static function (string $key) use ($navActive): string {
     return $navActive === $key ? ' active' : '';
+};
+
+/** Tiện ích: trả về ' active' nếu mục con đang được chọn */
+$isSubActive = static function (string $key) use ($navSubActive): string {
+    return $navSubActive === $key ? ' active' : '';
 };
 ?>
 <!--begin::Sidebar-->
@@ -118,11 +124,34 @@ $isActive = static function (string $key) use ($navActive): string {
         </li>
 
         <!--Thành viên 4 - Bảo trì-->
-        <li class="nav-item">
-          <a href="<?= $baseUrl ?>/index.php?page=bao_tri" class="nav-link<?= $isActive('bao_tri') ?>">
+        <li class="nav-item<?= $navActive === 'bao_tri' ? ' menu-open' : '' ?>">
+          <a href="#" class="nav-link<?= $isActive('bao_tri') ?>" aria-expanded="<?= $navActive === 'bao_tri' ? 'true' : 'false' ?>">
             <i class="nav-icon bi bi-tools"></i>
-            <p>Bảo trì &amp; khắc phục</p>
+            <p>
+              Bảo trì &amp; khắc phục
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
           </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="<?= $baseUrl ?>/index.php?page=bao_tri" class="nav-link<?= $isSubActive('tickets') ?>">
+                <i class="nav-icon bi bi-clipboard-check"></i>
+                <p>Danh sách phiếu bảo trì</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="<?= $baseUrl ?>/views/pages/bao_tri/thiet_bi.php" class="nav-link<?= $isSubActive('equipment') ?>">
+                <i class="nav-icon bi bi-hdd-stack"></i>
+                <p>Quản lý trang thiết bị</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="<?= $baseUrl ?>/views/pages/bao_tri/tau_bay.php" class="nav-link<?= $isSubActive('aircraft_types') ?>">
+                <i class="nav-icon bi bi-airplane"></i>
+                <p>Quản lý loại tàu bay</p>
+              </a>
+            </li>
+          </ul>
         </li>
 
         <!--Thành viên 5 - Kế toán-->
