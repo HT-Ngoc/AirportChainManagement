@@ -126,10 +126,6 @@ $airportGroupLabels = ['Quoc_Te' => 'Cảng hàng không quốc tế', 'Quoc_Noi
             <span>Ảnh hiện tại</span>
           </div>
         <?php endif; ?>
-        <div class="ht-upload-preview mt-2 d-none" data-ht-upload-preview>
-          <img src="" alt="Ảnh sơ đồ vừa chọn" />
-          <span data-ht-upload-name>Ảnh vừa chọn</span>
-        </div>
       </div>
 
       <div class="col-12">
@@ -145,51 +141,4 @@ $airportGroupLabels = ['Quoc_Te' => 'Cảng hàng không quốc tế', 'Quoc_Noi
       <a href="<?= $e($listUrl) ?>" class="btn btn-outline-secondary btn-sm">Hủy</a>
     </div>
   </form>
-
-  <script>
-  (function () {
-    var input = document.getElementById('ng-so-do');
-    var preview = document.querySelector('[data-ht-upload-preview]');
-    if (!input || !preview) {
-      return;
-    }
-
-    var image = preview.querySelector('img');
-    var name = preview.querySelector('[data-ht-upload-name]');
-    var objectUrl = null;
-    var allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
-    input.addEventListener('change', function () {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-        objectUrl = null;
-      }
-
-      var file = input.files && input.files[0];
-      if (!file) {
-        preview.classList.add('d-none');
-        return;
-      }
-
-      if (file.type && allowedTypes.indexOf(file.type) === -1) {
-        input.value = '';
-        preview.classList.add('d-none');
-        window.alert('Vui lòng chọn ảnh JPG, PNG hoặc WebP.');
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        input.value = '';
-        preview.classList.add('d-none');
-        window.alert('Ảnh sơ đồ không được vượt quá 5 MB.');
-        return;
-      }
-
-      objectUrl = URL.createObjectURL(file);
-      image.src = objectUrl;
-      name.textContent = file.name;
-      preview.classList.remove('d-none');
-    });
-  })();
-  </script>
 </div>

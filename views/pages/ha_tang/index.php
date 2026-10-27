@@ -13,10 +13,34 @@ $url = static function (array $params = []) {
     return BASE_URL . '/index.php?' . http_build_query(array_merge(['page' => 'ha_tang'], $params));
 };
 
-$imageUrl = static function ($path, $fallback = '') {
-    $path = trim((string) $path);
-    if ($path === '') {
-        $path = $fallback;
+/**
+ * Ảnh dùng trong trang: trả về URL đầy đủ.
+ * Nếu là đường dẫn nội bộ thì kiểm tra tệp có tồn tại thật hay không
+ * (thay cho thuộc tính onerror của JavaScript trước đây).
+ */
+$projectRoot = dirname(__DIR__, 3);
+
+$imageExists = static function (string $path) use ($projectRoot): bool {
+    if ($path === '' || preg_match('~^https?://~i', $path)) {
+        return true; // Ảnh ngoài hệ thống: không kiểm tra được, giữ nguyên
+    }
+
+    return is_file($projectRoot . '/' . ltrim($path, '/'));
+};
+
+$imageUrl = static function ($path, $fallback = '') use ($imageExists) {
+    $candidates = [
+        trim((string) $path),
+        trim((string) $fallback),
+        'assets/img/san_bay/SGN.jpg', // ảnh dự phòng cuối cùng
+    ];
+
+    $path = '';
+    foreach ($candidates as $candidate) {
+        if ($candidate !== '' && $imageExists($candidate)) {
+            $path = $candidate;
+            break;
+        }
     }
     if ($path === '') {
         return '';
@@ -29,9 +53,11 @@ $imageUrl = static function ($path, $fallback = '') {
 };
 
 $airportImage = static function ($airport) use ($imageUrl) {
+    $maIata = (string) ($airport['ma_iata'] ?? '');
+
     return $imageUrl(
         $airport['hinh_anh'] ?? '',
-        'assets/img/san_bay/' . ($airport['ma_iata'] ?? '') . '.jpg'
+        'assets/img/san_bay/' . $maIata . '.jpg'
     );
 };
 
@@ -165,6 +191,12 @@ if ($selectedAirport) {
 ob_start();
 ?>
 <style>
+  /* Tắt cuộn mượt để khi mở trang kèm mốc #ht-admin-tabs (hoặc #ht-tabs)
+     trình duyệt dừng ngay tại thanh tab, không cuộn từ đầu trang xuống
+     (AdminLTE bật scroll-behavior: smooth mặc định) */
+  :root {
+    scroll-behavior: auto;
+  }
   .ht-page {
     --ht-ink: #10233f;
     --ht-muted: #5c6b82;
@@ -497,6 +529,10 @@ ob_start();
   .ht-page .ht-tabs {
     gap: .35rem;
     border-bottom: 1px solid var(--ht-line);
+    scroll-margin-top: 4.75rem;
+  }
+  .ht-page .ht-admin-tabs {
+    scroll-margin-top: 4.75rem;
   }
   .ht-page .ht-tabs .nav-link {
     border: 0;
@@ -504,11 +540,36 @@ ob_start();
     color: var(--ht-muted);
     font-weight: 700;
     padding: .8rem 1.05rem;
+    cursor: pointer;
+    user-select: none;
+    transition: none;
   }
-  .ht-page .ht-tabs .nav-link.active {
+  /* Tab Chuyến bay / Nhà ga dùng radio + label (thuần CSS, không tải lại
+     trang) nên vị trí cuộn được giữ nguyên khi chuyển tab. */
+  .ht-page .ht-khu-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .ht-page #ht-khu-chuyen-bay:checked ~ .ht-tabs label[for="ht-khu-chuyen-bay"],
+  .ht-page #ht-khu-nha-ga:checked ~ .ht-tabs label[for="ht-khu-nha-ga"] {
     color: var(--ht-ink);
     background: var(--bs-body-bg);
     box-shadow: inset 0 -3px 0 var(--bs-primary);
+  }
+  .ht-page #ht-khu-chuyen-bay:focus-visible ~ .ht-tabs label[for="ht-khu-chuyen-bay"],
+  .ht-page #ht-khu-nha-ga:focus-visible ~ .ht-tabs label[for="ht-khu-nha-ga"] {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+  }
+  .ht-page .ht-tab-panel {
+    display: none;
+  }
+  .ht-page #ht-khu-chuyen-bay:checked ~ .ht-tab-content #ht-panel-chuyen-bay,
+  .ht-page #ht-khu-nha-ga:checked ~ .ht-tab-content #ht-panel-nha-ga {
+    display: block;
   }
   .ht-page .ht-tab-content {
     padding-top: 1rem;
@@ -1057,10 +1118,10 @@ ob_start();
     white-space: nowrap;
   }
   .ht-page .ht-table tbody tr.ht-row-link {
-    cursor: pointer;
+    cursor: default;
   }
   .ht-page .ht-table tbody tr.ht-row-link:hover > td {
-    background: rgba(37, 99, 235, .06);
+    background: rgba(0, 20, 137, .04);
   }
   .ht-page .ht-terminal-link {
     color: var(--ht-ink);
@@ -1199,15 +1260,9 @@ ob_start();
 </style>
 
 <div class="ht-page">
-<noscript>
-  <div class="alert alert-warning m-3 mb-0">
-    Trang cần JavaScript để giữ vị trí cuộn khi chuyển tab. Vui lòng bật JavaScript cho localhost.
-  </div>
-</noscript>
   <?php if ($flash): ?>
-    <div class="alert alert-<?= $e($flash['type']) ?> alert-dismissible fade show" role="alert">
+    <div class="alert alert-<?= $e($flash['type']) ?>" role="alert">
       <i class="bi bi-info-circle me-1"></i><?= $e($flash['message']) ?>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
     </div>
   <?php endif; ?>
 
@@ -1266,7 +1321,6 @@ ob_start();
             src="<?= $e($airportImage($airport)) ?>"
             alt="<?= $e($airport['ten_san_bay']) ?>"
             loading="lazy"
-            onerror="this.onerror=null;this.src='<?= $e(BASE_URL . '/assets/img/san_bay/' . $airport['ma_iata'] . '.jpg') ?>';"
           />
           <span class="ht-airport__tag <?= $isInternational ? 'is-intl' : 'is-dom' ?>">
             <?= $e($capLabels[$airport['phan_cap']] ?? $airport['phan_cap']) ?>
@@ -1290,7 +1344,6 @@ ob_start();
             <img
               src="<?= $e($airportImage($selectedAirport)) ?>"
               alt="<?= $e($selectedAirport['ten_san_bay']) ?>"
-              onerror="this.onerror=null;this.src='<?= $e(BASE_URL . '/assets/img/san_bay/' . $selectedAirport['ma_iata'] . '.jpg') ?>';"
             />
             <span class="ht-airport-detail__code"><?= $e($selectedAirport['ma_iata']) ?></span>
           </div>
@@ -1340,24 +1393,41 @@ ob_start();
     </div>
     <?php require __DIR__ . '/_quan_tri.php'; ?>
   <?php elseif ($selectedAirport): ?>
-    <ul class="nav nav-tabs ht-tabs mt-4">
+    <input
+      type="radio"
+      name="ht-khu"
+      id="ht-khu-chuyen-bay"
+      class="ht-khu-radio"
+      value="chuyen_bay"
+      <?= $khu === 'chuyen_bay' ? 'checked' : '' ?>
+    />
+    <input
+      type="radio"
+      name="ht-khu"
+      id="ht-khu-nha-ga"
+      class="ht-khu-radio"
+      value="nha_ga"
+      <?= $khu === 'nha_ga' ? 'checked' : '' ?>
+    />
+    <ul class="nav nav-tabs ht-tabs mt-4" id="ht-tabs">
       <li class="nav-item">
-        <a class="nav-link <?= $khu === 'chuyen_bay' ? 'active' : '' ?>" href="<?= $e($url(['san_bay' => $selectedAirport['ma_iata'], 'khu' => 'chuyen_bay'])) ?>">
+        <label class="nav-link" for="ht-khu-chuyen-bay">
           <i class="bi bi-airplane-engines me-1"></i> Chuyến bay
-        </a>
+        </label>
       </li>
       <li class="nav-item">
-        <a class="nav-link <?= $khu === 'nha_ga' ? 'active' : '' ?>" href="<?= $e($url(['san_bay' => $selectedAirport['ma_iata'], 'khu' => 'nha_ga', 'nha_ga' => $selectedTerminal['id'] ?? 0])) ?>">
+        <label class="nav-link" for="ht-khu-nha-ga">
           <i class="bi bi-diagram-3 me-1"></i> Nhà ga &amp; sơ đồ
-        </a>
+        </label>
       </li>
     </ul>
     <div class="ht-tab-content">
-      <?php if ($khu === 'nha_ga'): ?>
-        <?php require __DIR__ . '/_terminal.php'; ?>
-      <?php else: ?>
+      <div class="ht-tab-panel" id="ht-panel-chuyen-bay">
         <?php require __DIR__ . '/_flights.php'; ?>
-      <?php endif; ?>
+      </div>
+      <div class="ht-tab-panel" id="ht-panel-nha-ga">
+        <?php require __DIR__ . '/_terminal.php'; ?>
+      </div>
     </div>
   <?php else: ?>
     <div class="ht-empty mt-4">
@@ -1371,283 +1441,79 @@ ob_start();
   <?php endif; ?>
 </div>
 
-<script>
-(function () {
-  var storageKey = 'haTangScroll';
-  var pendingKey = 'haTangScrollPending';
-  var referrer = document.referrer || '';
-  var isReload = false;
-  var savedPosition = null;
-  var pendingTime = 0;
-  var currentUrl = window.location.href.split('#')[0];
-  var navigationPositionSaved = false;
-  var navigationInProgress = false;
+<?php
+/* ------------------------------------------------------------
+ * Hộp thoại xác nhận xóa (thuần PHP + CSS, không dùng JS)
+ * Dữ liệu được HaTangController lưu vào session ở lần gửi đầu.
+ * ------------------------------------------------------------ */
+$xacNhanXoa = $_SESSION['ha_tang_xac_nhan_xoa'] ?? null;
+unset($_SESSION['ha_tang_xac_nhan_xoa']);
 
-  try {
-    var navigationEntries = window.performance && window.performance.getEntriesByType
-      ? window.performance.getEntriesByType('navigation')
-      : [];
-    isReload = navigationEntries.length > 0 && navigationEntries[0].type === 'reload';
-  } catch (error) {
-    isReload = false;
-  }
+if (is_array($xacNhanXoa) && !empty($xacNhanXoa['action'])):
+    $xoaAction = (string) $xacNhanXoa['action'];
+    $xoaNoiDung = [
+        'xoa_san_bay' => [
+            'tieu_de' => 'Xóa sân bay này?',
+            'mo_ta'   => 'Toàn bộ nhà ga và tài nguyên trực thuộc (cửa ra, quầy check-in, băng chuyền) cũng sẽ bị xóa. Không thể xóa nếu sân bay đang có chuyến bay tham chiếu. Thao tác này không thể hoàn tác.',
+        ],
+        'xoa_nha_ga' => [
+            'tieu_de' => 'Xóa nhà ga này?',
+            'mo_ta'   => 'Các cửa ra, quầy check-in và băng chuyền trực thuộc cũng sẽ bị xóa. Thao tác này không thể hoàn tác.',
+        ],
+        'xoa_cua_ra' => [
+            'tieu_de' => 'Xóa cửa ra máy bay này?',
+            'mo_ta'   => 'Các chuyến bay đang dùng cửa ra này sẽ được bỏ liên kết. Thao tác này không thể hoàn tác.',
+        ],
+        'xoa_quay' => [
+            'tieu_de' => 'Xóa quầy check-in này?',
+            'mo_ta'   => 'Các chuyến bay đang dùng quầy này sẽ được bỏ liên kết. Thao tác này không thể hoàn tác.',
+        ],
+        'xoa_bang_chuyen' => [
+            'tieu_de' => 'Xóa băng chuyền hành lý này?',
+            'mo_ta'   => 'Các chuyến bay đang dùng băng chuyền này sẽ được bỏ liên kết. Thao tác này không thể hoàn tác.',
+        ],
+    ];
+    $xoaThongTin = $xoaNoiDung[$xoaAction] ?? [
+        'tieu_de' => 'Xóa bản ghi này?',
+        'mo_ta'   => 'Các chuyến bay đang tham chiếu sẽ được bỏ liên kết. Thao tác này không thể hoàn tác.',
+    ];
+    $xoaHuyUrl = (string) ($_SERVER['REQUEST_URI'] ?? $url(['quan_tri' => '1', 'tab' => 'san_bay']));
+?>
+<div
+  class="modal fade is-open"
+  id="xacNhanXoaModal"
+  tabindex="-1"
+  aria-labelledby="xacNhanXoaLabel"
+  aria-hidden="false"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-body text-center p-4">
+        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger mb-3" style="width: 58px; height: 58px;">
+          <i class="bi bi-trash3 fs-4"></i>
+        </span>
+        <h5 class="mb-2" id="xacNhanXoaLabel"><?= $e($xoaThongTin['tieu_de']) ?></h5>
+        <p class="text-secondary small mb-0"><?= $e($xoaThongTin['mo_ta']) ?></p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
+        <a href="<?= $e($xoaHuyUrl) ?>" class="btn btn-light border px-3">Hủy</a>
+        <form method="post" action="<?= $e(BASE_URL . '/index.php?page=ha_tang') ?>" class="d-inline">
+          <?php foreach ($xacNhanXoa as $tenTruong => $giaTri): ?>
+            <?php if (in_array($tenTruong, ['csrf', 'xac_nhan'], true) || is_array($giaTri)) { continue; } ?>
+            <input type="hidden" name="<?= $e($tenTruong) ?>" value="<?= $e($giaTri) ?>" />
+          <?php endforeach; ?>
+          <input type="hidden" name="csrf" value="<?= $e($data['csrf']) ?>" />
+          <input type="hidden" name="xac_nhan" value="1" />
+          <button type="submit" class="btn btn-danger px-3">
+            <i class="bi bi-trash3 me-1"></i>Xóa
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
-  try {
-    savedPosition = window.sessionStorage.getItem(storageKey);
-    pendingTime = parseInt(window.sessionStorage.getItem(pendingKey) || '0', 10);
-    window.sessionStorage.removeItem(pendingKey);
-  } catch (error) {
-    savedPosition = null;
-    pendingTime = 0;
-  }
-
-  var pendingRecent = pendingTime > 0 && (Date.now() - pendingTime) < 15000;
-  var samePageReferrer = /[?&]page=ha_tang(?:&|#|$)/.test(referrer);
-  var shouldRestore = isReload || samePageReferrer || pendingRecent;
-  var restoring = shouldRestore && savedPosition !== null && !window.location.hash;
-
-  function markPending() {
-    try {
-      window.sessionStorage.setItem(pendingKey, String(Date.now()));
-    } catch (error) {
-      return;
-    }
-  }
-
-  function clearPending() {
-    try {
-      window.sessionStorage.removeItem(pendingKey);
-    } catch (error) {
-      return;
-    }
-  }
-
-  window.addEventListener('scroll', function () {
-    if (navigationInProgress || restoring) {
-      return;
-    }
-
-    navigationPositionSaved = false;
-    persistScrollPosition();
-  }, { passive: true });
-
-  document.addEventListener('click', function (event) {
-    var target = event.target;
-    if (!target || !target.closest) {
-      return;
-    }
-
-    var hashLink = target.closest('a[href="#"]');
-    if (hashLink) {
-      event.preventDefault();
-      return;
-    }
-
-    var link = target.closest('a[href]');
-    if (!link || event.defaultPrevented || link.hasAttribute('download') || (link.target && link.target !== '_self') || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-
-    var url = null;
-    try {
-      url = new URL(link.href, window.location.href);
-    } catch (error) {
-      return;
-    }
-
-    if (url.origin !== window.location.origin) {
-      clearPending();
-      return;
-    }
-
-    if (url.href.split('#')[0] === currentUrl) {
-      return;
-    }
-
-    if (url.searchParams.get('page') === 'ha_tang') {
-      markNavigation();
-    } else {
-      clearPending();
-    }
-  });
-
-  document.addEventListener('submit', function (event) {
-    if (event.defaultPrevented) {
-      return;
-    }
-
-    var form = event.target;
-    if (!form || !form.action || (form.target && form.target !== '_self')) {
-      return;
-    }
-
-    var url = null;
-    try {
-      url = new URL(form.action, window.location.href);
-    } catch (error) {
-      return;
-    }
-
-    if (url.origin !== window.location.origin) {
-      clearPending();
-      return;
-    }
-
-    var pageInput = form.querySelector('input[name="page"]');
-    if (url.searchParams.get('page') === 'ha_tang' || (pageInput && pageInput.value === 'ha_tang')) {
-      markNavigation();
-    } else {
-      clearPending();
-    }
-  });
-
-  function markNavigation() {
-    saveScrollPosition(true);
-    navigationInProgress = true;
-    markPending();
-
-    window.setTimeout(function () {
-      navigationInProgress = false;
-      navigationPositionSaved = false;
-    }, 5000);
-  }
-
-  function persistScrollPosition(value) {
-    var top = String(typeof value === 'undefined'
-      ? (window.scrollY || window.pageYOffset || 0)
-      : value);
-    savedPosition = top;
-
-    try {
-      window.sessionStorage.setItem(storageKey, top);
-    } catch (error) {
-      return;
-    }
-  }
-
-  function saveScrollPosition(force) {
-    if (navigationPositionSaved && !force) {
-      return;
-    }
-
-    if (force && restoring && savedPosition !== null) {
-      navigationPositionSaved = true;
-      return;
-    }
-
-    persistScrollPosition();
-
-    if (force) {
-      navigationPositionSaved = true;
-    }
-  }
-
-  function restoreScrollPosition() {
-    if (!shouldRestore || savedPosition === null || window.location.hash) {
-      return;
-    }
-
-    var top = parseInt(savedPosition, 10);
-    if (isNaN(top) || top <= 0) {
-      return;
-    }
-
-    var root = document.documentElement;
-    var body = document.body;
-    var rootBehavior = root.style.scrollBehavior;
-    var bodyBehavior = body ? body.style.scrollBehavior : '';
-
-    root.style.scrollBehavior = 'auto';
-    if (body) {
-      body.style.scrollBehavior = 'auto';
-    }
-
-    window.scrollTo(0, top);
-
-    root.style.scrollBehavior = rootBehavior;
-    if (body) {
-      body.style.scrollBehavior = bodyBehavior;
-    }
-  }
-
-  function scheduleRestore() {
-    [0, 120, 350, 800].forEach(function (delay) {
-      window.setTimeout(restoreScrollPosition, delay);
-    });
-  }
-
-  if (shouldRestore && savedPosition !== null && !window.location.hash) {
-    restoreScrollPosition();
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', scheduleRestore);
-    } else {
-      scheduleRestore();
-    }
-
-    window.addEventListener('load', scheduleRestore);
-  }
-
-  if (restoring) {
-    window.setTimeout(function () {
-      restoring = false;
-    }, 1500);
-  }
-
-  window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-      shouldRestore = true;
-      restoring = true;
-      scheduleRestore();
-
-      window.setTimeout(function () {
-        restoring = false;
-      }, 1500);
-    }
-  });
-
-  window.addEventListener('pagehide', function () {
-    saveScrollPosition(false);
-  });
-
-  window.addEventListener('beforeunload', function () {
-    saveScrollPosition(false);
-  });
-})();
-</script>
-<script>
-(function () {
-  function interactiveTarget(target) {
-    return target.closest('a, button, input, select, textarea, label, form');
-  }
-
-  document.addEventListener('click', function (event) {
-    var target = event.target;
-    if (!target || !target.closest) {
-      return;
-    }
-
-    var row = target.closest('tr[data-row-href]');
-    if (!row || event.defaultPrevented || interactiveTarget(target)) {
-      return;
-    }
-    if ((typeof event.button === 'number' && event.button !== 0)
-      || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-
-    var selection = window.getSelection ? String(window.getSelection()) : '';
-    if (selection.length > 0) {
-      return;
-    }
-
-    var href = row.getAttribute('data-row-href');
-    if (href) {
-      window.location.assign(href);
-    }
-  });
-})();
-</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/main.php';

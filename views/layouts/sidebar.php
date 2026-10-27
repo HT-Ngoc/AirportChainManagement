@@ -7,6 +7,10 @@
  * thành viên thực hiện. Biến $navActive dùng để tô đậm mục
  * đang mở (nhận 1 trong các giá trị: ha_tang, chuyen_bay,
  * bao_tri, ke_toan, auth).
+ *
+ * Giao diện giữ nguyên sidebar tối mặc định của AdminLTE 4.
+ * Menu con dùng <details>/<summary> — mở/đóng bằng CSS,
+ * KHÔNG cần JavaScript.
  * ============================================================
  */
 
@@ -43,32 +47,12 @@ $isSubActive = static function (string $key) use ($navSubActive): string {
   </div>
   <!--end::Sidebar Brand-->
 
-  <!--begin::Sidebar Search-->
-  <div class="sidebar-search" role="search">
-    <label for="sidebar-search-input" class="visually-hidden">Lọc menu</label>
-    <input
-      type="search"
-      id="sidebar-search-input"
-      class="form-control form-control-sm"
-      placeholder="Lọc menu…"
-      autocomplete="off"
-      data-lte-toggle="sidebar-search"
-      data-lte-target="#navigation"
-    />
-  </div>
-  <!--end::Sidebar Search-->
-
   <!--begin::Sidebar Wrapper-->
   <div class="sidebar-wrapper">
     <nav class="mt-2" aria-label="Menu chính">
-      <ul
-        class="nav sidebar-menu flex-column"
-        data-lte-toggle="treeview"
-        data-accordion="false"
-        id="navigation"
-      >
+      <ul class="nav sidebar-menu flex-column" id="navigation">
         <li class="nav-item">
-          <a href="<?= $baseUrl ?>/index.php" class="nav-link">
+          <a href="<?= $baseUrl ?>/index.php" class="nav-link<?= $navActive === '' ? ' active' : '' ?>">
             <i class="nav-icon bi bi-speedometer2"></i>
             <p>Tổng quan</p>
           </a>
@@ -78,33 +62,35 @@ $isSubActive = static function (string $key) use ($navSubActive): string {
 
         <!--Thành viên 1 - Xác thực & tài khoản-->
         <li class="nav-item">
-          <a href="#" class="nav-link<?= $isActive('auth') ?>">
-            <i class="nav-icon bi bi-person-badge"></i>
-            <p>
-              Tài khoản &amp; phân quyền
-              <i class="nav-arrow bi bi-chevron-right"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="<?= $baseUrl ?>/index.php?page=login" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Đăng nhập</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="<?= $baseUrl ?>/index.php?page=register" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Đăng ký</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="<?= $baseUrl ?>/index.php?page=forgot" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Quên mật khẩu</p>
-              </a>
-            </li>
-          </ul>
+          <details class="nav-group<?= $navActive === 'auth' ? ' is-active' : '' ?>"<?= $navActive === 'auth' ? ' open' : '' ?>>
+            <summary class="nav-link<?= $isActive('auth') ?>">
+              <i class="nav-icon bi bi-person-badge"></i>
+              <p>
+                Tài khoản &amp; phân quyền
+                <i class="nav-arrow bi bi-chevron-right"></i>
+              </p>
+            </summary>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="<?= $baseUrl ?>/index.php?page=login" class="nav-link<?= $isSubActive('login') ?>">
+                  <i class="nav-icon bi bi-circle"></i>
+                  <p>Đăng nhập</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="<?= $baseUrl ?>/index.php?page=register" class="nav-link<?= $isSubActive('register') ?>">
+                  <i class="nav-icon bi bi-circle"></i>
+                  <p>Đăng ký</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="<?= $baseUrl ?>/index.php?page=forgot" class="nav-link<?= $isSubActive('forgot') ?>">
+                  <i class="nav-icon bi bi-circle"></i>
+                  <p>Quên mật khẩu</p>
+                </a>
+              </li>
+            </ul>
+          </details>
         </li>
 
         <!--Thành viên 2 - Hạ tầng-->
@@ -124,34 +110,36 @@ $isSubActive = static function (string $key) use ($navSubActive): string {
         </li>
 
         <!--Thành viên 4 - Bảo trì-->
-        <li class="nav-item<?= $navActive === 'bao_tri' ? ' menu-open' : '' ?>">
-          <a href="#" class="nav-link<?= $isActive('bao_tri') ?>" aria-expanded="<?= $navActive === 'bao_tri' ? 'true' : 'false' ?>">
-            <i class="nav-icon bi bi-tools"></i>
-            <p>
-              Bảo trì &amp; khắc phục
-              <i class="nav-arrow bi bi-chevron-right"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="<?= $baseUrl ?>/index.php?page=bao_tri" class="nav-link<?= $isSubActive('tickets') ?>">
-                <i class="nav-icon bi bi-clipboard-check"></i>
-                <p>Danh sách phiếu bảo trì</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="<?= $baseUrl ?>/views/pages/bao_tri/thiet_bi.php" class="nav-link<?= $isSubActive('equipment') ?>">
-                <i class="nav-icon bi bi-hdd-stack"></i>
-                <p>Quản lý trang thiết bị</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="<?= $baseUrl ?>/views/pages/bao_tri/tau_bay.php" class="nav-link<?= $isSubActive('aircraft_types') ?>">
-                <i class="nav-icon bi bi-airplane"></i>
-                <p>Quản lý loại tàu bay</p>
-              </a>
-            </li>
-          </ul>
+        <li class="nav-item">
+          <details class="nav-group<?= $navActive === 'bao_tri' ? ' is-active' : '' ?>"<?= $navActive === 'bao_tri' ? ' open' : '' ?>>
+            <summary class="nav-link<?= $isActive('bao_tri') ?>">
+              <i class="nav-icon bi bi-tools"></i>
+              <p>
+                Bảo trì &amp; khắc phục
+                <i class="nav-arrow bi bi-chevron-right"></i>
+              </p>
+            </summary>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="<?= $baseUrl ?>/index.php?page=bao_tri" class="nav-link<?= $isSubActive('tickets') ?>">
+                  <i class="nav-icon bi bi-clipboard-check"></i>
+                  <p>Danh sách phiếu bảo trì</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="<?= $baseUrl ?>/views/pages/bao_tri/thiet_bi.php" class="nav-link<?= $isSubActive('equipment') ?>">
+                  <i class="nav-icon bi bi-hdd-stack"></i>
+                  <p>Quản lý trang thiết bị</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="<?= $baseUrl ?>/views/pages/bao_tri/tau_bay.php" class="nav-link<?= $isSubActive('aircraft_types') ?>">
+                  <i class="nav-icon bi bi-airplane"></i>
+                  <p>Quản lý loại tàu bay</p>
+                </a>
+              </li>
+            </ul>
+          </details>
         </li>
 
         <!--Thành viên 5 - Kế toán-->

@@ -5,35 +5,47 @@ require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../controllers/KeToanController.php';
 $keToan = new KeToanController($conn);
 
-//2. Xử lý các hành động được gửi lên
+//2. Xử lý các hành động được gửi lên (PHP thuần: flash + redirect, không JS)
+$keToanUrl = 'index.php?page=ke_toan';
+
 //Xử lý thêm đơn giá mới
 if (isset($_POST['btn_them_gia'])) {
-    $keToan->ThemDonGia($_POST['ten_dich_vu'], $_POST['don_gia'], $_POST['don_vi_tinh']);
-    echo "<script>alert('Thêm đơn giá thành công!'); 
-    window.location.href='index.php?page=ke_toan';</script>";
+    $ketQua = $keToan->ThemDonGia($_POST['ten_dich_vu'], $_POST['don_gia'], $_POST['don_vi_tinh']);
+    if ($ketQua === false) {
+        $_SESSION['flash_error'] = 'Không thêm được đơn giá. Vui lòng kiểm tra lại dữ liệu.';
+    } else {
+        $_SESSION['flash_success'] = 'Thêm đơn giá thành công!';
+    }
+    header('Location: ' . $keToanUrl);
     exit();
 }
 
 // Xử lý phát hành hóa đơn tự động
 if (isset($_GET['tao_hoa_don']) && !empty($_GET['tao_hoa_don'])) {
-    $ma_cb = $_GET['tao_hoa_don'];
-    
+    $ma_cb = (int) $_GET['tao_hoa_don'];
+
     if ($keToan->TinhVaTaoHoaDon($ma_cb)) {
-        echo "<script>alert('Đã tính toán và tạo hóa đơn thành công!'); 
-        window.location.href='index.php?page=ke_toan';</script>";
+        $_SESSION['flash_success'] = 'Đã tính toán và tạo hóa đơn thành công!';
     } else {
-        echo "<script>alert('Lỗi khi tạo hóa đơn! Vui lòng kiểm tra lại dữ liệu chuyến bay.');</script>";
+        $_SESSION['flash_error'] = 'Lỗi khi tạo hóa đơn! Vui lòng kiểm tra lại dữ liệu chuyến bay.';
     }
+    header('Location: ' . $keToanUrl);
     exit();
 }
 
 // Xử lý xác nhận thanh toán
 if (isset($_GET['thanh_toan_id'])) {
-    $keToan->XacNhanThanhToan($_GET['thanh_toan_id']);
-    echo "<script>alert('Đã xác nhận thanh toán thành công!'); 
-    window.location.href='index.php?page=ke_toan';</script>";
+    $keToan->XacNhanThanhToan((int) $_GET['thanh_toan_id']);
+    $_SESSION['flash_success'] = 'Đã xác nhận thanh toán thành công!';
+    header('Location: ' . $keToanUrl);
     exit();
 }
+
+// Lấy flash message (nếu có) rồi xóa để không hiện lại khi tải lại trang
+$flashSuccess = $_SESSION['flash_success'] ?? '';
+$flashError   = $_SESSION['flash_error'] ?? '';
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+
 
 // 3. Lấy dữ liệu để hiển thị trên trang
 $danh_sach_gia = $keToan->DanhSachDonGia();
@@ -59,6 +71,13 @@ $breadcrumb = [
 ];
 ob_start();
 ?>
+
+<?php if ($flashSuccess !== ''): ?>
+    <div class="alert alert-success" role="alert"><?= htmlspecialchars($flashSuccess, ENT_QUOTES, 'UTF-8') ?></div>
+<?php endif; ?>
+<?php if ($flashError !== ''): ?>
+    <div class="alert alert-danger" role="alert"><?= htmlspecialchars($flashError, ENT_QUOTES, 'UTF-8') ?></div>
+<?php endif; ?>
 
 <!--PHẦN 1: THỐNG KÊ NHANH-->
 <div class="row">
@@ -192,9 +211,8 @@ ob_start();
                             <td><span class="badge text-bg-success"><?= htmlspecialchars($cb['trang_thai_tong']) ?></span></td>
                             <td class="text-end">
                                 <a href="index.php?page=ke_toan&tao_hoa_don=<?= $cb['id'] ?>" 
-                                   class="btn btn-sm btn-warning"
-                                   onclick="return confirm('Hệ thống sẽ tự động tính MTOW, giờ đỗ, số khách và lập hóa đơn. Tiếp tục?');">
-                                   <i class="bi bi-calculator"></i> Tính và Lập hóa đơn
+                                   class="btn btn-sm btn-outline-primary">
+                                   Tính và lập hóa đơn
                                 </a>
                             </td>
                         </tr>
@@ -237,9 +255,8 @@ ob_start();
                             <td><?= date('d/m/Y', strtotime($hd['han_thanh_toan'])) ?></td>
                             <td class="text-end">
                                 <a href="index.php?page=ke_toan&thanh_toan_id=<?= $hd['id'] ?>" 
-                                   class="btn btn-sm btn-success"
-                                   onclick="return confirm('Xác nhận khách đã thanh toán hóa đơn này?');">
-                                   <i class="bi bi-check-circle"></i> Xác nhận thu tiền
+                                   class="btn btn-sm btn-outline-success">
+                                   Xác nhận thu tiền
                                 </a>
                             </td>
                         </tr>

@@ -64,7 +64,7 @@ $airports = $data['airports'];
               >
                 <i class="bi bi-pencil"></i> Sửa
               </a>
-              <form method="post" action="<?= $e(BASE_URL . '/index.php?page=ha_tang') ?>" class="d-inline" onsubmit="return confirm('Xóa sân bay này? Toàn bộ nhà ga và tài nguyên trực thuộc cũng sẽ bị xóa.');">
+              <form method="post" action="<?= $e(BASE_URL . '/index.php?page=ha_tang') ?>" class="d-inline">
                 <input type="hidden" name="csrf" value="<?= $e($data['csrf']) ?>" />
                 <input type="hidden" name="action" value="xoa_san_bay" />
                 <input type="hidden" name="id" value="<?= (int) $airport['id'] ?>" />

@@ -5,7 +5,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'store
     $baoTriController->storeThietBi();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'xoa') {
+/* Xóa chỉ chạy khi form xác nhận được gửi (POST), không xóa bằng link GET */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'xoa_thiet_bi') {
     $baoTriController->xoaThietBi();
 }
 
@@ -97,109 +98,62 @@ usort($dsLoai, function ($a, $b) use ($loaiThietBiLabels) {
     return strcmp($loaiThietBiLabels[$a] ?? $a, $loaiThietBiLabels[$b] ?? $b);
 });
 
-$pageScripts = <<<'HTML'
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Modal thêm thiết bị
-    var addModalElement = document.getElementById('themThietBiModal');
-    if (addModalElement) {
-        if (window.bootstrap && new URLSearchParams(window.location.search).get('open') === 'create') {
-            bootstrap.Modal.getOrCreateInstance(addModalElement).show();
+/* ------------------------------------------------------------
+ * Lọc danh sách phía máy chủ (thay cho bộ lọc JavaScript cũ).
+ * Tham số GET: q, san_bay, loai, trang_thai.
+ * ------------------------------------------------------------ */
+$filterQ         = trim((string) ($_GET['q'] ?? ''));
+$filterSanBay    = trim((string) ($_GET['san_bay'] ?? ''));
+$filterLoai      = trim((string) ($_GET['loai'] ?? ''));
+$filterTrangThai = trim((string) ($_GET['trang_thai'] ?? ''));
+
+$tongThietBiGoc = $tongThietBi;
+
+$thiet_bi = array_values(array_filter($thiet_bi, static function (array $tb) use ($filterQ, $filterSanBay, $filterLoai, $filterTrangThai): bool {
+    if ($filterQ !== '') {
+        $maThietBi = 'TB-' . sprintf('%03d', (int) $tb['id']);
+        if (mb_stripos((string) $tb['ten_thiet_bi'], $filterQ, 0, 'UTF-8') === false
+            && mb_stripos($maThietBi, $filterQ, 0, 'UTF-8') === false) {
+            return false;
         }
-
-        addModalElement.addEventListener('shown.bs.modal', function () {
-            var nameInput = document.getElementById('them_ten_thiet_bi');
-            if (nameInput) nameInput.focus();
-        });
-
-        addModalElement.addEventListener('hidden.bs.modal', function () {
-            var url = new URL(window.location.href);
-            if (url.searchParams.get('open') === 'create') {
-                url.searchParams.delete('open');
-                window.history.replaceState({}, '', url.toString());
-            }
-        });
     }
-
-    // Bộ lọc thiết bị
-    var searchInput = document.getElementById('filterSearch');
-    var sanBaySelect = document.getElementById('filterSanBay');
-    var loaiSelect = document.getElementById('filterLoai');
-    var trangThaiSelect = document.getElementById('filterTrangThai');
-    var resetButton = document.getElementById('resetFilters');
-    var table = document.getElementById('thietBiTable');
-    var visibleCount = document.getElementById('visibleCount');
-    var noResultRow = document.getElementById('noResultRow');
-
-    function normalizeText(value) {
-        return (value || '').toString().toLocaleLowerCase('vi')
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/đ/g, 'd');
+    if ($filterSanBay !== '' && (string) $tb['ten_san_bay'] !== $filterSanBay) {
+        return false;
     }
+    if ($filterLoai !== '' && (string) $tb['loai_thiet_bi'] !== $filterLoai) {
+        return false;
+    }
+    if ($filterTrangThai !== '' && (string) $tb['trang_thai'] !== $filterTrangThai) {
+        return false;
+    }
+    return true;
+}));
 
-    if (table && searchInput && sanBaySelect && loaiSelect && trangThaiSelect) {
-        var rows = Array.prototype.slice.call(table.querySelectorAll('tbody tr[data-search]'));
+$soLuongHienThi = count($thiet_bi);
+$urlDongModal   = baoTriUrl('thiet_bi.php', array_filter([
+    'q'          => $filterQ,
+    'san_bay'    => $filterSanBay,
+    'loai'       => $filterLoai,
+    'trang_thai' => $filterTrangThai,
+], static fn($v) => $v !== ''));
 
-        function applyFilters() {
-            var keyword = normalizeText(searchInput.value.trim());
-            var sanBay = sanBaySelect.value;
-            var loai = loaiSelect.value;
-            var trangThai = trangThaiSelect.value;
-            var visible = 0;
-
-            rows.forEach(function (row) {
-                var matchKeyword = !keyword || normalizeText(row.getAttribute('data-search')).indexOf(keyword) !== -1;
-                var matchSanBay = !sanBay || row.getAttribute('data-san-bay') === sanBay;
-                var matchLoai = !loai || row.getAttribute('data-loai') === loai;
-                var matchTrangThai = !trangThai || row.getAttribute('data-trang-thai') === trangThai;
-                var show = matchKeyword && matchSanBay && matchLoai && matchTrangThai;
-
-                row.classList.toggle('d-none', !show);
-                if (show) visible++;
-            });
-
-            if (visibleCount) visibleCount.textContent = visible;
-            if (noResultRow) noResultRow.classList.toggle('d-none', visible !== 0 || rows.length === 0);
+/* ------------------------------------------------------------
+ * Xác nhận xóa (thuần PHP + CSS, không dùng confirm() của JS):
+ * link Xóa trỏ tới ?xac_nhan_xoa=<id>; trang hiện hộp thoại,
+ * nút "Xóa" trong hộp thoại mới gửi form POST thật.
+ * ------------------------------------------------------------ */
+$idCanXoa      = (int) ($_GET['xac_nhan_xoa'] ?? 0);
+$thietBiCanXoa = null;
+if ($idCanXoa > 0) {
+    foreach ($baoTriController->getDanhSachThietBi() as $tbItem) {
+        if ((int) $tbItem['id'] === $idCanXoa) {
+            $thietBiCanXoa = $tbItem;
+            break;
         }
-
-        [searchInput, sanBaySelect, loaiSelect, trangThaiSelect].forEach(function (element) {
-            element.addEventListener('input', applyFilters);
-            element.addEventListener('change', applyFilters);
-        });
-
-        if (resetButton) {
-            resetButton.addEventListener('click', function () {
-                searchInput.value = '';
-                sanBaySelect.value = '';
-                loaiSelect.value = '';
-                trangThaiSelect.value = '';
-                applyFilters();
-                searchInput.focus();
-            });
-        }
-
-        applyFilters();
     }
+}
 
-    // Modal xác nhận xóa
-    var deleteModal = document.getElementById('xoaThietBiModal');
-    if (deleteModal) {
-        deleteModal.addEventListener('show.bs.modal', function (event) {
-            var trigger = event.relatedTarget;
-            if (!trigger) return;
 
-            var deleteLink = document.getElementById('xoaThietBiLink');
-            var deviceName = document.getElementById('xoaTenThietBi');
-            var url = trigger.getAttribute('data-delete-url');
-            var name = trigger.getAttribute('data-device-name');
-
-            if (deleteLink && url) deleteLink.setAttribute('href', url);
-            if (deviceName) deviceName.textContent = name || 'thiết bị này';
-        });
-    }
-});
-</script>
-HTML;
 
 ob_start();
 ?>
@@ -285,56 +239,56 @@ ob_start();
                     <div class="small text-secondary mt-1">Quản lý trang thiết bị mặt đất trên toàn mạng lưới</div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-sm btn-success"
-                            data-bs-toggle="modal" data-bs-target="#themThietBiModal">
+                    <a href="#themThietBiModal" class="btn btn-sm btn-success">
                         <i class="bi bi-plus-lg me-1"></i>Thêm thiết bị
-                    </button>
+                    </a>
                 </div>
             </div>
 
-            <?php if (!empty($thiet_bi)): ?>
+            <?php if ($tongThietBiGoc > 0): ?>
                 <div class="card-body pb-2">
-                    <div class="row g-2">
+                    <form method="get" action="<?= htmlspecialchars(baoTriUrl('thiet_bi.php'), ENT_QUOTES, 'UTF-8') ?>" class="row g-2">
                         <div class="col-12 col-lg-4">
                             <label for="filterSearch" class="form-label small text-secondary mb-1">Tìm kiếm</label>
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-body-tertiary"><i class="bi bi-search"></i></span>
-                                <input type="search" id="filterSearch" class="form-control" placeholder="Tên thiết bị hoặc mã TB...">
+                                <span class="input-group-text bg-body-tertiary"><i class="bi bi-search" aria-hidden="true"></i></span>
+                                <input type="search" id="filterSearch" name="q" value="<?= htmlspecialchars($filterQ, ENT_QUOTES, 'UTF-8') ?>" class="form-control" placeholder="Tên thiết bị hoặc mã TB...">
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-lg-3">
                             <label for="filterSanBay" class="form-label small text-secondary mb-1">Sân bay</label>
-                            <select id="filterSanBay" class="form-select form-select-sm">
+                            <select id="filterSanBay" name="san_bay" class="form-select form-select-sm">
                                 <option value="">Tất cả sân bay</option>
                                 <?php foreach ($dsSanBay as $tenSanBay): ?>
-                                    <option value="<?= htmlspecialchars($tenSanBay, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($tenSanBay, ENT_QUOTES, 'UTF-8') ?></option>
+                                    <option value="<?= htmlspecialchars($tenSanBay, ENT_QUOTES, 'UTF-8') ?>"<?= $filterSanBay === $tenSanBay ? ' selected' : '' ?>><?= htmlspecialchars($tenSanBay, ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-6 col-lg-2">
                             <label for="filterLoai" class="form-label small text-secondary mb-1">Phân loại</label>
-                            <select id="filterLoai" class="form-select form-select-sm">
+                            <select id="filterLoai" name="loai" class="form-select form-select-sm">
                                 <option value="">Tất cả loại</option>
                                 <?php foreach ($dsLoai as $loai): ?>
-                                    <option value="<?= htmlspecialchars($loai, ENT_QUOTES, 'UTF-8') ?>"><?= $loaiThietBiLabels[$loai] ?? htmlspecialchars(str_replace('_', ' ', $loai), ENT_QUOTES, 'UTF-8') ?></option>
+                                    <option value="<?= htmlspecialchars($loai, ENT_QUOTES, 'UTF-8') ?>"<?= $filterLoai === $loai ? ' selected' : '' ?>><?= $loaiThietBiLabels[$loai] ?? htmlspecialchars(str_replace('_', ' ', $loai), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-6 col-lg-3">
                             <label for="filterTrangThai" class="form-label small text-secondary mb-1">Trạng thái</label>
-                            <select id="filterTrangThai" class="form-select form-select-sm">
+                            <select id="filterTrangThai" name="trang_thai" class="form-select form-select-sm">
                                 <option value="">Tất cả trạng thái</option>
                                 <?php foreach ($statusLabels as $key => $label): ?>
-                                    <option value="<?= $key ?>"><?= $label ?></option>
+                                    <option value="<?= $key ?>"<?= $filterTrangThai === $key ? ' selected' : '' ?>><?= $label ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                    </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-sm btn-primary">Lọc thiết bị</button>
+                        </div>
+                    </form>
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-secondary mt-2">
-                        <span>Hiển thị <strong id="visibleCount"><?= $tongThietBi ?></strong> / <strong><?= $tongThietBi ?></strong> thiết bị</span>
-                        <button type="button" id="resetFilters" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i>Xóa lọc
-                        </button>
+                        <span>Hiển thị <strong><?= $soLuongHienThi ?></strong> / <strong><?= $tongThietBiGoc ?></strong> thiết bị</span>
+                        <a href="<?= htmlspecialchars(baoTriUrl('thiet_bi.php'), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
                     </div>
                 </div>
             <?php endif; ?>
@@ -403,16 +357,23 @@ ob_start();
                                     </td>
                                     <td class="text-end pe-3 text-nowrap">
                                         <?php if ($soPhieu > 0): ?>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Không thể xóa vì thiết bị đã có phiếu bảo trì">
+                                            <span class="btn btn-sm btn-outline-secondary disabled" title="Không thể xóa vì thiết bị đã có phiếu bảo trì">
                                                 <i class="bi bi-lock me-1"></i>Đã có phiếu
-                                            </button>
+                                            </span>
                                         <?php else: ?>
-                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                    data-bs-toggle="modal" data-bs-target="#xoaThietBiModal"
-                                                    data-delete-url="<?= htmlspecialchars(baoTriUrl('thiet_bi.php', ['action' => 'xoa', 'id' => (int) $item['id']]), ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-device-name="<?= htmlspecialchars($item['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?php
+                                            $xoaUrl = baoTriUrl('thiet_bi.php', array_filter([
+                                                'q'            => $filterQ,
+                                                'san_bay'      => $filterSanBay,
+                                                'loai'         => $filterLoai,
+                                                'trang_thai'   => $filterTrangThai,
+                                                'xac_nhan_xoa' => (int) $item['id'],
+                                            ], static fn($v) => $v !== ''));
+                                            ?>
+                                            <a href="<?= htmlspecialchars($xoaUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                               class="btn btn-sm btn-outline-danger">
                                                 <i class="bi bi-trash3 me-1"></i>Xóa
-                                            </button>
+                                            </a>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -420,21 +381,21 @@ ob_start();
                         <?php else: ?>
                             <tr>
                                 <td colspan="6" class="text-center py-5">
-                                    <div class="text-secondary mb-2"><i class="bi bi-inbox fs-1"></i></div>
-                                    <div class="fw-semibold">Chưa có thiết bị nào</div>
-                                    <div class="small text-secondary mb-3">Thêm thiết bị đầu tiên để bắt đầu quản lý.</div>
-                                    <button type="button" class="btn btn-sm btn-success"
-                                            data-bs-toggle="modal" data-bs-target="#themThietBiModal">
-                                        <i class="bi bi-plus-lg me-1"></i>Thêm thiết bị
-                                    </button>
+                                    <?php if ($tongThietBiGoc > 0): ?>
+                                        <div class="fw-semibold">Không tìm thấy thiết bị phù hợp với bộ lọc.</div>
+                                        <div class="small text-secondary mb-3">Hãy xóa bớt điều kiện lọc để xem toàn bộ danh mục.</div>
+                                        <a href="<?= htmlspecialchars(baoTriUrl('thiet_bi.php'), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+                                    <?php else: ?>
+                                        <div class="text-secondary mb-2"><i class="bi bi-inbox fs-1"></i></div>
+                                        <div class="fw-semibold">Chưa có thiết bị nào</div>
+                                        <div class="small text-secondary mb-3">Thêm thiết bị đầu tiên để bắt đầu quản lý.</div>
+                                        <a href="#themThietBiModal" class="btn btn-sm btn-success">
+                                            <i class="bi bi-plus-lg me-1"></i>Thêm thiết bị
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endif; ?>
-                        <tr id="noResultRow" class="d-none">
-                            <td colspan="6" class="text-center py-4 text-secondary">
-                                <i class="bi bi-search me-1"></i> Không tìm thấy thiết bị phù hợp với bộ lọc.
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -451,10 +412,10 @@ ob_start();
     #themThietBiModal .form-label { font-size: .8125rem; }
 </style>
 
-<div class="modal fade" id="themThietBiModal" tabindex="-1" aria-labelledby="themThietBiModalLabel" aria-hidden="true">
+<div class="modal fade<?= $modalError !== null ? ' is-open' : '' ?>" id="themThietBiModal" tabindex="-1" aria-labelledby="themThietBiModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content shadow-lg">
-            <form action="<?= baoTriUrl('thiet_bi.php') ?>" method="POST">
+            <form action="<?= htmlspecialchars(baoTriUrl('thiet_bi.php'), ENT_QUOTES, 'UTF-8') ?>" method="POST">
                 <input type="hidden" name="action" value="store_thiet_bi">
                 <div class="modal-header border-0 px-3 py-2">
                     <div class="d-flex align-items-center gap-2">
@@ -466,7 +427,7 @@ ob_start();
                             <div class="small text-secondary">Khai báo trang thiết bị mặt đất</div>
                         </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    <a href="<?= htmlspecialchars($urlDongModal, ENT_QUOTES, 'UTF-8') ?>" class="acv-close" aria-label="Đóng">&times;</a>
                 </div>
 
                 <div class="modal-body px-3 py-3">
@@ -528,7 +489,7 @@ ob_start();
                         <i class="bi bi-info-circle me-1"></i> Thiết bị mới mặc định ở trạng thái <strong>Tốt</strong>.
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-light border px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <a href="<?= htmlspecialchars($urlDongModal, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-light border px-3">Hủy bỏ</a>
                         <button type="submit" class="btn btn-sm btn-success px-3" <?= empty($san_bay_list) ? 'disabled' : '' ?>>
                             <i class="bi bi-check2 me-1"></i> Lưu thiết bị
                         </button>
@@ -540,8 +501,9 @@ ob_start();
 </div>
 <!--end::Modal thêm thiết bị-->
 
-<!-- Modal xác nhận xóa -->
-<div class="modal fade" id="xoaThietBiModal" tabindex="-1" aria-labelledby="xoaThietBiModalLabel" aria-hidden="true">
+<?php if ($thietBiCanXoa !== null): ?>
+<!-- Modal xác nhận xóa (thuần PHP + CSS, không dùng JS) -->
+<div class="modal fade is-open" id="xoaThietBiModal" tabindex="-1" aria-labelledby="xoaThietBiModalLabel" aria-hidden="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-body text-center p-4">
@@ -550,19 +512,25 @@ ob_start();
                 </span>
                 <h5 class="mb-2" id="xoaThietBiModalLabel">Xóa thiết bị?</h5>
                 <p class="text-secondary small mb-0">
-                    Bạn có chắc muốn xóa <strong id="xoaTenThietBi">thiết bị này</strong>?
+                    Bạn có chắc muốn xóa <strong><?= htmlspecialchars($thietBiCanXoa['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?></strong>?
                     Hành động này không thể hoàn tác.
                 </p>
             </div>
             <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
-                <button type="button" class="btn btn-light border px-3" data-bs-dismiss="modal">Hủy</button>
-                <a href="#" id="xoaThietBiLink" class="btn btn-danger px-3">
-                    <i class="bi bi-trash3 me-1"></i>Xóa thiết bị
-                </a>
+                <a href="<?= htmlspecialchars($urlDongModal, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-light border px-3">Hủy</a>
+                <form method="post" action="<?= htmlspecialchars(baoTriUrl('thiet_bi.php', ['id' => $idCanXoa]), ENT_QUOTES, 'UTF-8') ?>" class="d-inline">
+                    <input type="hidden" name="action" value="xoa_thiet_bi" />
+                    <button type="submit" class="btn btn-danger px-3">
+                        <i class="bi bi-trash3 me-1"></i>Xóa thiết bị
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
+<!--end::Modal xác nhận xóa-->
+<?php endif; ?>
+
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/main.php';

@@ -37,7 +37,7 @@ $items = $data['terminals'];
         $checkinsUrl = $adminUrl(array_merge(['tab' => 'quay'], $resourceParams));
         $beltsUrl = $adminUrl(array_merge(['tab' => 'bang_chuyen'], $resourceParams));
         ?>
-        <tr class="<?= $isSelected ? 'table-active ' : '' ?>ht-row-link" data-row-href="<?= $e($selectUrl) ?>">
+        <tr class="<?= $isSelected ? 'table-active ' : '' ?>ht-row-link">
           <td><span class="badge text-bg-secondary"><?= $e($item['ma_nha_ga']) ?></span></td>
           <td>
             <a
@@ -88,7 +88,7 @@ $items = $data['terminals'];
               >
                 <i class="bi bi-pencil"></i> Sửa
               </a>
-              <form method="post" action="<?= $e(BASE_URL . '/index.php?page=ha_tang') ?>" class="d-inline" onsubmit="return confirm('Xóa nhà ga này? Các cửa ra, quầy check-in và băng chuyền trực thuộc cũng sẽ bị xóa.');">
+              <form method="post" action="<?= $e(BASE_URL . '/index.php?page=ha_tang') ?>" class="d-inline">
                 <input type="hidden" name="csrf" value="<?= $e($data['csrf']) ?>" />
                 <input type="hidden" name="action" value="xoa_nha_ga" />
                 <input type="hidden" name="id" value="<?= (int) $item['id'] ?>" />

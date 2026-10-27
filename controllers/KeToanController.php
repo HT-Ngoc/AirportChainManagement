@@ -74,8 +74,12 @@ class KeToanController {
             $phi_do_tau_bay = $so_gio_do * $gia_do;
             $phi_phuc_vu_hk = $cb['luong_hanh_khach'] * $phi_psc;
             $tong_tien = $phi_cat_ha_canh + $phi_do_tau_bay + $phi_phuc_vu_hk;
-            $sql_insert = "INSERT INTO hoa_don (id_chuyen_bay, phi_cat_ha_canh, phi_do_tau_bay, phi_phuc_vu_hk, tong_tien, ngay_xuat, han_thanh_toan, trang_thai_thanh_toan) 
-                           VALUES ($id_chuyen_bay, $phi_cat_ha_canh, $phi_do_tau_bay, $phi_phuc_vu_hk, $tong_tien, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'Chua_Thanh_Toan')";
+            // Bảng hoa_don trong CSDL không có cột han_thanh_toan:
+            // hạn thanh toán được suy ra = ngay_xuat + 30 ngày (xem DanhSachHoaDonCho).
+            // Cột id_hang_hang_khong là NOT NULL nên bắt buộc phải truyền vào.
+            $id_hang = (int) ($cb['id_hang_hang_khong'] ?? 0);
+            $sql_insert = "INSERT INTO hoa_don (id_chuyen_bay, id_hang_hang_khong, phi_cat_ha_canh, phi_do_tau_bay, phi_phuc_vu_hk, tong_tien, ngay_xuat, trang_thai_thanh_toan) 
+                           VALUES ($id_chuyen_bay, $id_hang, $phi_cat_ha_canh, $phi_do_tau_bay, $phi_phuc_vu_hk, $tong_tien, NOW(), 'Chua_Thanh_Toan')";
             return mysqli_query($this->conn, $sql_insert);
         }
         return false;
@@ -135,10 +139,11 @@ class KeToanController {
                  FROM hoa_don 
                  WHERE trang_thai_thanh_toan = 'Chua_Thanh_Toan'";
         $stats['hd_chua_thu'] = mysqli_fetch_assoc(mysqli_query($this->conn, $sql3))['sl'] ?? 0;
+        // CSDL không có cột han_thanh_toan -> hạn thanh toán = ngay_xuat + 30 ngày
         $sql4 = "SELECT SUM(tong_tien) as tien_no 
                  FROM hoa_don 
                  WHERE trang_thai_thanh_toan = 'Chua_Thanh_Toan' 
-                 AND han_thanh_toan < CURRENT_DATE()";
+                 AND DATE_ADD(ngay_xuat, INTERVAL 30 DAY) < CURRENT_DATE()";
         $stats['no_qua_han'] = mysqli_fetch_assoc(mysqli_query($this->conn, $sql4))['tien_no'] ?? 0;
         $sql5 = "SELECT COUNT(*) as sl 
                  FROM chuyen_bay_ngay 
@@ -149,7 +154,9 @@ class KeToanController {
 
 //Danh sách hóa đơn chờ
     public function DanhSachHoaDonCho() {
-        $sql = "SELECT hd.*, cb.so_hieu 
+        // CSDL không có cột han_thanh_toan -> tính hạn thanh toán = ngay_xuat + 30 ngày
+        // để view vẫn hiển thị được cột "Hạn chót" như thiết kế ban đầu.
+        $sql = "SELECT hd.*, DATE_ADD(hd.ngay_xuat, INTERVAL 30 DAY) AS han_thanh_toan, cb.so_hieu 
                 FROM hoa_don hd 
                 JOIN chuyen_bay_ngay cb ON hd.id_chuyen_bay = cb.id 
                 WHERE hd.trang_thai_thanh_toan = 'Chua_Thanh_Toan'";

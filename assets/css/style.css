@@ -2,19 +2,188 @@
  * CSS dùng chung của dự án
  * File: assets/css/style.css
  * ------------------------------------------------------------
- * Ghi chú:
- *   - Chỉ khai báo các tinh chỉnh riêng của hệ thống.
- *   - Mọi thành phần giao diện cơ bản đã có sẵn ở AdminLTE 4
- *     (admin-lte-v4.10.1/dist/css/adminlte.css).
- *   - Nạp file này SAU adminlte.css trong views/layouts/header.php
- *     và views/layouts/auth.php.
+ * Giao diện: AdminLTE 4 mặc định (nền xám bg-body-tertiary,
+ * thẻ trắng bo góc + bóng đổ, sidebar tối, footer sáng).
+ * File này KHÔNG đổi bảng màu của AdminLTE — mọi màu sắc,
+ * bo góc và bóng đổ do adminlte.css quyết định.
+ *
+ * Toàn bộ giao diện chạy bằng PHP + CSS + HTML, KHÔNG JavaScript.
+ * Phần dưới đây chỉ bổ sung các cơ chế thay thế JavaScript:
+ *   1. Thu gọn sidebar  : checkbox ẩn + label
+ *   2. Menu con         : <details> / <summary>
+ *   3. Dropdown user    : :hover / :focus-within
+ *   4. Modal            : :target + class .is-open
  * ============================================================ */
 
-/* Ví dụ tinh chỉnh mẫu — có thể xóa khi không cần */
+/* ---------- Giữ lại từ bản gốc ---------- */
 .login-logo a {
   text-decoration: none;
 }
 
 .table > :not(caption) > * > * {
   vertical-align: middle;
+}
+
+/* ============================================================
+ * 1. THU GỌN SIDEBAR — checkbox ẩn, không cần JS
+ * ============================================================ */
+.acv-sidebar-toggle {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+label.acv-sidebar-toggle-btn {
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Màn hình lớn: bỏ hẳn sidebar khỏi lưới */
+@media (min-width: 992px) {
+  .acv-sidebar-toggle:checked ~ .app-wrapper .app-sidebar {
+    display: none;
+  }
+}
+
+/* Màn hình nhỏ: sidebar vốn là off-canvas (margin-left âm),
+   checkbox sẽ kéo nó vào thay cho class .sidebar-open của JS */
+@media (max-width: 991.98px) {
+  .acv-sidebar-toggle:checked ~ .app-wrapper .app-sidebar {
+    margin-left: 0;
+    z-index: 1045;
+  }
+
+  .acv-sidebar-toggle:checked ~ .app-wrapper .acv-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background-color: rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+  }
+}
+
+.acv-sidebar-overlay {
+  display: none;
+}
+
+/* ============================================================
+ * 2. MENU CON — <details>/<summary> thay cho treeview JS
+ * ============================================================ */
+.sidebar-menu details.nav-group {
+  display: block;
+}
+
+.sidebar-menu details.nav-group > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.sidebar-menu details.nav-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-menu details.nav-group > summary::marker {
+  content: "";
+}
+
+/* Giữ đúng màu chữ của sidebar tối */
+.sidebar-menu details.nav-group > summary.nav-link {
+  color: var(--lte-sidebar-color);
+}
+
+.sidebar-menu details.nav-group > summary.nav-link:hover,
+.sidebar-menu details.nav-group > summary.nav-link:focus {
+  color: var(--lte-sidebar-hover-color);
+  background-color: var(--lte-sidebar-hover-bg);
+}
+
+.sidebar-menu details.nav-group.is-active > summary.nav-link {
+  color: var(--lte-sidebar-menu-active-color);
+  background-color: var(--lte-sidebar-menu-active-bg);
+}
+
+/* AdminLTE ẩn .nav-treeview, chỉ mở khi có .menu-open.
+   Với <details>, mở theo thuộc tính [open]. */
+.sidebar-menu details.nav-group > .nav-treeview {
+  display: none;
+}
+
+.sidebar-menu details.nav-group[open] > .nav-treeview {
+  display: block;
+}
+
+.sidebar-menu details.nav-group[open] > summary .nav-arrow {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+/* ============================================================
+ * 3. DROPDOWN NGƯỜI DÙNG — hover / focus, không cần JS
+ * ============================================================ */
+.user-menu {
+  position: relative;
+}
+
+/* Không có Popper (JS) nên tự căn mép phải cho menu */
+.user-menu > .dropdown-menu {
+  top: 100%;
+  left: auto;
+  right: 0;
+  margin-top: 0;
+}
+
+.user-menu:hover > .dropdown-menu,
+.user-menu:focus-within > .dropdown-menu {
+  display: block;
+}
+
+/* ============================================================
+ * 4. MODAL — mở bằng :target hoặc class .is-open
+ *    (dùng khi POST lỗi và cần mở lại hộp thoại)
+ * ============================================================ */
+.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal:target,
+.modal.is-open {
+  display: block;
+  opacity: 1;
+}
+
+.modal:target .modal-dialog,
+.modal.is-open .modal-dialog {
+  transform: none;
+}
+
+/* Modal đang mở thì không cuộn trang phía sau */
+body:has(.modal:target),
+body:has(.modal.is-open) {
+  overflow: hidden;
+}
+
+/* Nút đóng modal dạng liên kết (không cần JS) */
+.acv-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  color: var(--bs-body-color);
+  font-size: 1.6rem;
+  font-weight: 300;
+  line-height: 1;
+  text-decoration: none;
+  opacity: .5;
+}
+
+.acv-close:hover,
+.acv-close:focus {
+  color: var(--bs-body-color);
+  text-decoration: none;
+  opacity: .85;
 }

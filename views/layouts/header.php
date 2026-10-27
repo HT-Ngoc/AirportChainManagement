@@ -7,6 +7,12 @@
  * sidebar. Nó KHÔNG đóng thẻ, phần thân trang nằm ở main.php
  * và phần kết thúc nằm ở footer.php
  *
+ * Giao diện giữ nguyên phong cách AdminLTE 4 mặc định.
+ * TOÀN BỘ GIAO DIỆN KHÔNG DÙNG JAVASCRIPT:
+ *   - Thu gọn sidebar : checkbox ẩn + label (CSS)
+ *   - Menu con        : <details>/<summary> (sidebar.php)
+ *   - Dropdown user   : :hover / :focus-within (style.css)
+ *
  * Biến có thể truyền vào (đều có giá trị mặc định):
  *   $pageTitle   : Tiêu đề tab trình duyệt
  *   $navActive   : Key menu đang mở (auth|ha_tang|chuyen_bay|bao_tri|ke_toan)
@@ -36,42 +42,13 @@ $vaiTroHienThi = $daDangNhap
     : 'Khách';
 ?>
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-bs-theme="light">
   <head>
     <meta charset="utf-8" />
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
 
-    <!--begin::Theme Init (tránh nháy sáng/tối khi tải trang)-->
-    <script>
-      (() => {
-        'use strict';
-        const root = document.documentElement;
-        if (root.getAttribute('data-lte-color-mode') === 'off') return;
-        const STORAGE_KEY = 'lte-theme';
-        let stored = null;
-        try {
-          stored = localStorage.getItem(STORAGE_KEY);
-        } catch {
-          /* localStorage có thể bị chặn */
-        }
-        const authored = root.getAttribute('data-bs-theme');
-        let resolved = 'light';
-        if (stored === 'dark' || stored === 'light') {
-          resolved = stored;
-        } else if (authored === 'dark' || authored === 'light') {
-          resolved = authored;
-        } else if (globalThis.matchMedia('(prefers-color-scheme: dark)').matches) {
-          resolved = 'dark';
-        }
-        root.setAttribute('data-bs-theme', resolved);
-        root.style.colorScheme = resolved;
-        if (resolved !== authored) root.setAttribute('data-lte-theme-resolved', '');
-      })();
-    </script>
-    <!--end::Theme Init-->
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <meta name="description" content="Hệ thống quản lý điều hành khai thác chuỗi cảng hàng không (ACV)" />
 
     <!--begin::Fonts-->
@@ -79,18 +56,8 @@ $vaiTroHienThi = $daDangNhap
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.3.0/index.css"
       crossorigin="anonymous"
-      media="print"
-      onload="this.media = 'all'"
     />
     <!--end::Fonts-->
-
-    <!--begin::Third Party Plugin(OverlayScrollbars)-->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.16.0/styles/overlayscrollbars.min.css"
-      crossorigin="anonymous"
-    />
-    <!--end::Third Party Plugin-->
 
     <!--begin::Third Party Plugin(Bootstrap Icons)-->
     <link
@@ -100,31 +67,38 @@ $vaiTroHienThi = $daDangNhap
     />
     <!--end::Third Party Plugin-->
 
-    <!--begin::CSS dùng chung của dự án-->
-    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/style.css" />
-    <!--end::CSS dùng chung-->
-
     <!--begin::Required Plugin(AdminLTE)-->
     <link rel="stylesheet" href="<?= $adminLteUrl ?>/css/adminlte.css" />
-    <!--end::Required Plugin(AdminLTE)-->
+    <!--end::Required Plugin-->
+
+    <!--begin::CSS dùng chung của dự án (nạp sau AdminLTE)-->
+
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../../assets/css/style.css') ?: '1' ?>" />
+    <!--end::CSS dùng chung-->
   </head>
 
   <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <!-- Checkbox điều khiển sidebar, thuần CSS (không cần JS) -->
+    <input type="checkbox" id="acv-sidebar-toggle" class="acv-sidebar-toggle" aria-label="Mở hoặc đóng menu" />
+
     <div class="app-wrapper">
+      <!-- Lớp phủ đóng menu trên màn hình nhỏ (label cho checkbox) -->
+      <label for="acv-sidebar-toggle" class="acv-sidebar-overlay" aria-hidden="true"></label>
+
       <!--begin::Header-->
       <nav class="app-header navbar navbar-expand bg-body">
         <div class="container-fluid">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a
-                class="nav-link"
-                data-lte-toggle="sidebar"
-                href="#"
+              <label
+                for="acv-sidebar-toggle"
+                class="nav-link acv-sidebar-toggle-btn"
                 role="button"
+                tabindex="0"
                 aria-label="Mở/đóng menu"
               >
                 <i class="bi bi-list"></i>
-              </a>
+              </label>
             </li>
             <li class="nav-item d-none d-md-block">
               <a href="<?= $baseUrl ?>/index.php" class="nav-link">
@@ -135,52 +109,9 @@ $vaiTroHienThi = $daDangNhap
           </ul>
 
           <ul class="navbar-nav ms-auto">
-            <!--begin::Fullscreen Toggle-->
-            <li class="nav-item">
-              <a class="nav-link" href="#" data-lte-toggle="fullscreen" aria-label="Toàn màn hình">
-                <i data-lte-icon="maximize" class="bi bi-arrows-fullscreen"></i>
-                <i data-lte-icon="minimize" class="bi bi-fullscreen-exit d-none"></i>
-              </a>
-            </li>
-            <!--end::Fullscreen Toggle-->
-
-            <!--begin::Color Mode Toggle-->
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link"
-                href="#"
-                id="bd-theme"
-                aria-label="Chọn chế độ màu"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <i class="bi bi-sun-fill" data-lte-theme-icon="light"></i>
-                <i class="bi bi-moon-fill d-none" data-lte-theme-icon="dark"></i>
-                <i class="bi bi-circle-half d-none" data-lte-theme-icon="auto"></i>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme">
-                <li>
-                  <button type="button" class="dropdown-item" data-bs-theme-value="light">
-                    <i class="bi bi-sun-fill me-2"></i> Sáng
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="dropdown-item" data-bs-theme-value="dark">
-                    <i class="bi bi-moon-fill me-2"></i> Tối
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="dropdown-item active" data-bs-theme-value="auto">
-                    <i class="bi bi-circle-half me-2"></i> Tự động
-                  </button>
-                </li>
-              </ul>
-            </li>
-            <!--end::Color Mode Toggle-->
-
-            <!--begin::User Menu Dropdown (dữ liệu mẫu, Thành viên 1 thay bằng session thật)-->
+            <!--begin::User Menu Dropdown (CSS :hover / :focus-within, không JS)-->
             <li class="nav-item dropdown user-menu">
-              <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+              <a href="#user-menu" class="nav-link dropdown-toggle" aria-haspopup="true">
                 <img
                   src="<?= $adminLteUrl ?>/assets/img/user2-160x160.jpg"
                   class="user-image rounded-circle shadow"
@@ -188,7 +119,7 @@ $vaiTroHienThi = $daDangNhap
                 />
                 <span class="d-none d-xl-inline"><?= htmlspecialchars($tenHienThi, ENT_QUOTES, 'UTF-8') ?></span>
               </a>
-              <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
+              <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end" id="user-menu">
                 <li class="user-header text-bg-primary">
                   <img
                     src="<?= $adminLteUrl ?>/assets/img/user2-160x160.jpg"
@@ -201,7 +132,6 @@ $vaiTroHienThi = $daDangNhap
                   </p>
                 </li>
                 <li class="user-footer">
-                  <a href="#" class="btn btn-outline-secondary">Hồ sơ</a>
                   <?php if ($daDangNhap): ?>
                     <a href="<?= $baseUrl ?>/controllers/AuthController.php?action=logout" class="btn btn-outline-danger float-end">
                       Đăng xuất

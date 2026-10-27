@@ -6,6 +6,10 @@
  * Khung trang dùng chung cho tất cả các trang nội dung có
  * sidebar (mọi trang trong views/pages, trừ auth/).
  *
+ * LƯU Ý: giao diện KHÔNG dùng JavaScript. Không còn biến
+ * $pageScripts — mọi tương tác dùng CSS (:target, <details>,
+ * :hover/:focus-within) hoặc xử lý phía PHP.
+ *
  * CÁCH SỬ DỤNG trong 1 file trang:
  *
  *   $pageTitle    = 'Danh sách chuyến bay';
@@ -15,7 +19,6 @@
  *       ['label' => 'Tổng quan', 'url' => '/AirportChainManagement/index.php'],
  *       ['label' => 'Chuyến bay', 'url' => null],
  *   ];
- *   $pageScripts  = '<script> ... JS riêng của trang ... </script>';
  *
  *   ob_start();
  *   ?>

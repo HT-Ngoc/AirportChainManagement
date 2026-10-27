@@ -1,3 +1,44 @@
+-- ============================================================
+-- CƠ SỞ DỮ LIỆU: `quan_ly_chuoi_san_bay`  (FILE TỔNG HỢP CUỐI CÙNG)
+-- ------------------------------------------------------------
+-- Được gộp từ 2 file:
+--   1) database/quan_ly_chuoi_san_bay.sql        (bản gốc)
+--   2) database/quan_ly_chuoi_san_baypull1.sql   (bản mở rộng)
+--
+-- NGUYÊN TẮC GỘP:
+--   - Cấu trúc: lấy bản pull1, vì bản này là SUPERSET của bản gốc
+--     (giữ đủ 16 bảng, chỉ thêm cột chứ không bỏ cột nào):
+--       + bang_chuyen_hanh_ly : thêm khu_vuc
+--       + cua_ra_may_bay      : thêm khu_vuc
+--       + quay_checkin        : thêm khu_vuc
+--       + nha_ga              : thêm ma_nha_ga, loai_nha_ga, nam_khai_thac,
+--                                      dien_tich, cong_suat, so_do, mo_ta
+--       + san_bay             : thêm ma_icao, ten_ngan, hinh_anh, mo_ta, thu_tu_hien_thi
+--       + các bảng trên có thêm UNIQUE KEY chống trùng dữ liệu
+--   - Dữ liệu: lấy bản pull1 vì đã bao trùm toàn bộ dữ liệu mẫu của bản gốc
+--     (nha_ga 21 dòng, san_bay 15 dòng, cua_ra_may_bay 140 dòng,
+--      bang_chuyen_hanh_ly 64 dòng, quay_checkin 42 dòng...).
+--   - Bổ sung: CREATE DATABASE IF NOT EXISTS + USE để import được trên máy mới.
+--
+-- CÁCH IMPORT:
+--   Cách 1 - dòng lệnh (khuyến nghị, giữ đúng tiếng Việt):
+--     mysql -u root --default-character-set=utf8mb4 < database/quan_ly_chuoi_san_bayfinal.sql
+--   Cách 2 - phpMyAdmin: chọn Import -> Chọn file -> Character set: utf-8 -> Go
+--
+-- LƯU Ý:
+--   - File KHÔNG có DROP TABLE nên chỉ import được vào CSDL đang trống.
+--     Muốn import lại từ đầu thì xóa CSDL cũ trước:
+--       DROP DATABASE `quan_ly_chuoi_san_bay`;
+--   - Tài khoản mẫu trong bảng `nguoi_dung` dùng mật khẩu đã hash bcrypt,
+--     KHÔNG phải mật khẩu chữ thường.
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS `quan_ly_chuoi_san_bay`
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_general_ci;
+
+USE `quan_ly_chuoi_san_bay`;
+
 -- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
@@ -31,6 +72,7 @@ CREATE TABLE `bang_chuyen_hanh_ly` (
   `id` int(11) NOT NULL,
   `id_nha_ga` int(11) NOT NULL,
   `so_bang_chuyen` varchar(20) NOT NULL,
+  `khu_vuc` varchar(50) DEFAULT NULL,
   `trang_thai` enum('Hoat_Dong','Bao_Tri') DEFAULT 'Hoat_Dong'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -38,9 +80,71 @@ CREATE TABLE `bang_chuyen_hanh_ly` (
 -- Dumping data for table `bang_chuyen_hanh_ly`
 --
 
-INSERT INTO `bang_chuyen_hanh_ly` (`id`, `id_nha_ga`, `so_bang_chuyen`, `trang_thai`) VALUES
-(1, 1, 'Belt 01', 'Hoat_Dong'),
-(2, 3, 'Belt 05', 'Hoat_Dong');
+INSERT INTO `bang_chuyen_hanh_ly` (`id`, `id_nha_ga`, `so_bang_chuyen`, `khu_vuc`, `trang_thai`) VALUES
+(1, 1, '01', 'Sảnh đến', 'Hoat_Dong'),
+(2, 7, '01', 'Sảnh đến', 'Hoat_Dong'),
+(3, 1, '02', 'Sảnh đến', 'Hoat_Dong'),
+(4, 1, '03', 'Sảnh đến', 'Hoat_Dong'),
+(5, 1, '04', 'Sảnh đến', 'Hoat_Dong'),
+(6, 1, '05', 'Sảnh đến', 'Hoat_Dong'),
+(7, 1, '06', 'Sảnh đến', 'Bao_Tri'),
+(8, 2, '07', 'Sảnh đến', 'Hoat_Dong'),
+(9, 2, '08', 'Sảnh đến', 'Hoat_Dong'),
+(10, 2, '09', 'Sảnh đến', 'Hoat_Dong'),
+(11, 2, '10', 'Sảnh đến', 'Hoat_Dong'),
+(12, 2, '11', 'Sảnh đến', 'Hoat_Dong'),
+(13, 2, '12', 'Sảnh đến', 'Bao_Tri'),
+(14, 3, '01', 'Sảnh đến', 'Hoat_Dong'),
+(15, 3, '02', 'Sảnh đến', 'Hoat_Dong'),
+(16, 3, '03', 'Sảnh đến', 'Hoat_Dong'),
+(17, 3, '04', 'Sảnh đến', 'Hoat_Dong'),
+(18, 3, '05', 'Sảnh đến', 'Hoat_Dong'),
+(19, 3, '06', 'Sảnh đến', 'Hoat_Dong'),
+(20, 4, '07', 'Sảnh đến', 'Hoat_Dong'),
+(21, 4, '08', 'Sảnh đến', 'Hoat_Dong'),
+(22, 4, '09', 'Sảnh đến', 'Hoat_Dong'),
+(23, 4, '10', 'Sảnh đến', 'Hoat_Dong'),
+(24, 4, '11', 'Sảnh đến', 'Hoat_Dong'),
+(25, 4, '12', 'Sảnh đến', 'Bao_Tri'),
+(26, 5, '01', 'Sảnh đến', 'Hoat_Dong'),
+(27, 5, '02', 'Sảnh đến', 'Hoat_Dong'),
+(28, 5, '03', 'Sảnh đến', 'Hoat_Dong'),
+(29, 5, '04', 'Sảnh đến', 'Hoat_Dong'),
+(30, 6, '05', 'Sảnh đến', 'Hoat_Dong'),
+(31, 6, '06', 'Sảnh đến', 'Hoat_Dong'),
+(32, 6, '07', 'Sảnh đến', 'Hoat_Dong'),
+(33, 6, '08', 'Sảnh đến', 'Hoat_Dong'),
+(34, 7, '02', 'Sảnh đến', 'Hoat_Dong'),
+(35, 7, '03', 'Sảnh đến', 'Hoat_Dong'),
+(36, 8, '04', 'Sảnh đến', 'Hoat_Dong'),
+(37, 8, '05', 'Sảnh đến', 'Hoat_Dong'),
+(38, 8, '06', 'Sảnh đến', 'Bao_Tri'),
+(39, 9, '01', 'Sảnh đến', 'Hoat_Dong'),
+(40, 9, '02', 'Sảnh đến', 'Hoat_Dong'),
+(41, 9, '03', 'Sảnh đến', 'Hoat_Dong'),
+(42, 9, '04', 'Sảnh đến', 'Hoat_Dong'),
+(43, 9, '05', 'Sảnh đến', 'Hoat_Dong'),
+(44, 9, '06', 'Sảnh đến', 'Hoat_Dong'),
+(45, 11, '01', 'Sảnh đến', 'Hoat_Dong'),
+(46, 11, '02', 'Sảnh đến', 'Hoat_Dong'),
+(47, 11, '03', 'Sảnh đến', 'Hoat_Dong'),
+(48, 11, '04', 'Sảnh đến', 'Hoat_Dong'),
+(49, 12, '01', 'Sảnh đến', 'Hoat_Dong'),
+(50, 12, '02', 'Sảnh đến', 'Hoat_Dong'),
+(51, 12, '03', 'Sảnh đến', 'Bao_Tri'),
+(52, 13, '01', 'Sảnh đến', 'Hoat_Dong'),
+(53, 13, '02', 'Sảnh đến', 'Hoat_Dong'),
+(54, 14, '01', 'Sảnh đến', 'Hoat_Dong'),
+(55, 14, '02', 'Sảnh đến', 'Hoat_Dong'),
+(56, 15, '01', 'Sảnh đến', 'Hoat_Dong'),
+(57, 16, '01', 'Sảnh đến', 'Hoat_Dong'),
+(58, 16, '02', 'Sảnh đến', 'Hoat_Dong'),
+(59, 17, '01', 'Sảnh đến', 'Hoat_Dong'),
+(60, 18, '01', 'Sảnh đến', 'Hoat_Dong'),
+(61, 18, '02', 'Sảnh đến', 'Bao_Tri'),
+(62, 19, '01', 'Sảnh đến', 'Hoat_Dong'),
+(63, 19, '02', 'Sảnh đến', 'Hoat_Dong'),
+(64, 20, '01', 'Sảnh đến', 'Hoat_Dong');
 
 -- --------------------------------------------------------
 
@@ -107,6 +211,7 @@ CREATE TABLE `cua_ra_may_bay` (
   `id` int(11) NOT NULL,
   `id_nha_ga` int(11) NOT NULL,
   `so_cua` varchar(20) NOT NULL,
+  `khu_vuc` varchar(50) DEFAULT NULL,
   `trang_thai` enum('Hoat_Dong','Bao_Tri') DEFAULT 'Hoat_Dong'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -114,11 +219,147 @@ CREATE TABLE `cua_ra_may_bay` (
 -- Dumping data for table `cua_ra_may_bay`
 --
 
-INSERT INTO `cua_ra_may_bay` (`id`, `id_nha_ga`, `so_cua`, `trang_thai`) VALUES
-(1, 1, 'Gate 1', 'Hoat_Dong'),
-(2, 1, 'Gate 2', 'Hoat_Dong'),
-(3, 3, 'Gate 10', 'Hoat_Dong'),
-(4, 3, 'Gate 11', 'Bao_Tri');
+INSERT INTO `cua_ra_may_bay` (`id`, `id_nha_ga`, `so_cua`, `khu_vuc`, `trang_thai`) VALUES
+(1, 1, '1', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(2, 1, '2', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(3, 3, '10', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(4, 3, '11', 'Tầng 2 - Khu B', 'Bao_Tri'),
+(5, 1, '3', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(6, 1, '4', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(7, 1, '5', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(8, 1, '6', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(9, 1, '7', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(10, 1, '8', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(11, 1, '9', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(12, 1, '10', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(13, 1, '11', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(14, 1, '12', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(15, 1, '13', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(16, 1, '14', 'Tầng 2 - Khu B', 'Bao_Tri'),
+(17, 2, '21', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(18, 2, '22', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(19, 2, '23', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(20, 2, '24', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(21, 2, '25', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(22, 2, '26', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(23, 2, '27', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(24, 2, '28', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(25, 2, '29', 'Tầng 2 - Khu quốc tế', 'Bao_Tri'),
+(26, 2, '30', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(27, 3, '1', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(28, 3, '2', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(29, 3, '3', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(30, 3, '4', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(31, 3, '5', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(32, 3, '6', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(33, 3, '7', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(34, 3, '8', 'Tầng 2 - Khu A', 'Hoat_Dong'),
+(35, 3, '9', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(36, 3, '12', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(37, 3, '13', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(38, 3, '14', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(39, 3, '15', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(40, 3, '16', 'Tầng 2 - Khu B', 'Hoat_Dong'),
+(41, 4, '13', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(42, 4, '14', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(43, 4, '15', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(44, 4, '16', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(45, 4, '17', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(46, 4, '18', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(47, 4, '19', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(48, 4, '20', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(49, 4, '21', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(50, 4, '22', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(51, 4, '23', 'Tầng 2 - Khu quốc tế', 'Hoat_Dong'),
+(52, 4, '24', 'Tầng 2 - Khu quốc tế', 'Bao_Tri'),
+(53, 5, '1', 'Khu quốc nội', 'Hoat_Dong'),
+(54, 5, '2', 'Khu quốc nội', 'Hoat_Dong'),
+(55, 5, '3', 'Khu quốc nội', 'Hoat_Dong'),
+(56, 5, '4', 'Khu quốc nội', 'Hoat_Dong'),
+(57, 5, '5', 'Khu quốc nội', 'Hoat_Dong'),
+(58, 5, '6', 'Khu quốc nội', 'Hoat_Dong'),
+(59, 5, '7', 'Khu quốc nội', 'Hoat_Dong'),
+(60, 5, '8', 'Khu quốc nội', 'Hoat_Dong'),
+(61, 6, '9', 'Khu quốc tế', 'Hoat_Dong'),
+(62, 6, '10', 'Khu quốc tế', 'Hoat_Dong'),
+(63, 6, '11', 'Khu quốc tế', 'Hoat_Dong'),
+(64, 6, '12', 'Khu quốc tế', 'Hoat_Dong'),
+(65, 6, '13', 'Khu quốc tế', 'Hoat_Dong'),
+(66, 6, '14', 'Khu quốc tế', 'Hoat_Dong'),
+(67, 6, '15', 'Khu quốc tế', 'Hoat_Dong'),
+(68, 6, '16', 'Khu quốc tế', 'Bao_Tri'),
+(69, 7, '1', 'Khu quốc nội', 'Hoat_Dong'),
+(70, 7, '2', 'Khu quốc nội', 'Hoat_Dong'),
+(71, 7, '3', 'Khu quốc nội', 'Hoat_Dong'),
+(72, 7, '4', 'Khu quốc nội', 'Hoat_Dong'),
+(73, 7, '5', 'Khu quốc nội', 'Hoat_Dong'),
+(74, 7, '6', 'Khu quốc nội', 'Hoat_Dong'),
+(75, 8, '7', 'Khu quốc tế', 'Hoat_Dong'),
+(76, 8, '8', 'Khu quốc tế', 'Hoat_Dong'),
+(77, 8, '9', 'Khu quốc tế', 'Hoat_Dong'),
+(78, 8, '10', 'Khu quốc tế', 'Hoat_Dong'),
+(79, 8, '11', 'Khu quốc tế', 'Hoat_Dong'),
+(80, 8, '12', 'Khu quốc tế', 'Hoat_Dong'),
+(81, 8, '13', 'Khu quốc tế', 'Hoat_Dong'),
+(82, 8, '14', 'Khu quốc tế', 'Hoat_Dong'),
+(83, 9, '1', 'Khu quốc nội', 'Hoat_Dong'),
+(84, 9, '2', 'Khu quốc nội', 'Hoat_Dong'),
+(85, 9, '3', 'Khu quốc nội', 'Hoat_Dong'),
+(86, 9, '4', 'Khu quốc nội', 'Hoat_Dong'),
+(87, 9, '5', 'Khu quốc nội', 'Hoat_Dong'),
+(88, 9, '6', 'Khu quốc nội', 'Hoat_Dong'),
+(89, 9, '7', 'Khu quốc tế', 'Hoat_Dong'),
+(90, 9, '8', 'Khu quốc tế', 'Hoat_Dong'),
+(91, 9, '9', 'Khu quốc tế', 'Hoat_Dong'),
+(92, 9, '10', 'Khu quốc tế', 'Hoat_Dong'),
+(93, 9, '11', 'Khu quốc tế', 'Hoat_Dong'),
+(94, 9, '12', 'Khu quốc tế', 'Hoat_Dong'),
+(95, 11, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(96, 11, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(97, 11, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(98, 11, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(99, 11, '5', 'Khu khởi hành', 'Hoat_Dong'),
+(100, 11, '6', 'Khu khởi hành', 'Hoat_Dong'),
+(101, 11, '7', 'Khu khởi hành', 'Hoat_Dong'),
+(102, 11, '8', 'Khu khởi hành', 'Bao_Tri'),
+(103, 12, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(104, 12, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(105, 12, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(106, 12, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(107, 12, '5', 'Khu khởi hành', 'Hoat_Dong'),
+(108, 12, '6', 'Khu khởi hành', 'Hoat_Dong'),
+(109, 13, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(110, 13, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(111, 13, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(112, 13, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(113, 14, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(114, 14, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(115, 14, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(116, 14, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(117, 14, '5', 'Khu khởi hành', 'Hoat_Dong'),
+(118, 15, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(119, 15, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(120, 15, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(121, 16, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(122, 16, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(123, 16, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(124, 16, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(125, 17, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(126, 17, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(127, 17, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(128, 17, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(129, 18, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(130, 18, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(131, 18, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(132, 18, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(133, 19, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(134, 19, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(135, 19, '3', 'Khu khởi hành', 'Hoat_Dong'),
+(136, 19, '4', 'Khu khởi hành', 'Hoat_Dong'),
+(137, 19, '5', 'Khu khởi hành', 'Bao_Tri'),
+(138, 20, '1', 'Khu khởi hành', 'Hoat_Dong'),
+(139, 20, '2', 'Khu khởi hành', 'Hoat_Dong'),
+(140, 20, '3', 'Khu khởi hành', 'Bao_Tri');
 
 -- --------------------------------------------------------
 
@@ -292,7 +533,14 @@ INSERT INTO `nhat_ky_trang_thai_bay` (`id`, `id_chuyen_bay`, `id_nguoi_dung`, `t
 CREATE TABLE `nha_ga` (
   `id` int(11) NOT NULL,
   `id_san_bay` int(11) NOT NULL,
-  `ten_nha_ga` varchar(50) NOT NULL,
+  `ma_nha_ga` varchar(10) NOT NULL,
+  `ten_nha_ga` varchar(100) NOT NULL,
+  `loai_nha_ga` enum('Quoc_Noi','Quoc_Te','Hon_Hop') NOT NULL DEFAULT 'Hon_Hop',
+  `nam_khai_thac` smallint(6) DEFAULT NULL,
+  `dien_tich` varchar(50) DEFAULT NULL,
+  `cong_suat` varchar(50) DEFAULT NULL,
+  `so_do` varchar(255) DEFAULT NULL,
+  `mo_ta` varchar(500) DEFAULT NULL,
   `trang_thai` enum('Hoat_Dong','Bao_Tri') DEFAULT 'Hoat_Dong'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -300,10 +548,30 @@ CREATE TABLE `nha_ga` (
 -- Dumping data for table `nha_ga`
 --
 
-INSERT INTO `nha_ga` (`id`, `id_san_bay`, `ten_nha_ga`, `trang_thai`) VALUES
-(1, 1, 'T1 - Quốc nội Nội Bài', 'Hoat_Dong'),
-(2, 1, 'T2 - Quốc tế Nội Bài', 'Hoat_Dong'),
-(3, 2, 'T1 - Quốc nội Tân Sơn Nhất', 'Hoat_Dong');
+INSERT INTO `nha_ga` (`id`, `id_san_bay`, `ma_nha_ga`, `ten_nha_ga`, `loai_nha_ga`, `nam_khai_thac`, `dien_tich`, `cong_suat`, `so_do`, `mo_ta`, `trang_thai`) VALUES
+(1, 1, 'T1', 'Nhà ga T1 - Quốc nội', 'Quoc_Noi', 2001, '90.000 m²', '15 triệu khách/năm', NULL, 'Nhà ga quốc nội phục vụ các chuyến bay nội địa, được cải tạo và mở rộng năm 2015.', 'Hoat_Dong'),
+(2, 1, 'T2', 'Nhà ga T2 - Quốc tế', 'Quoc_Te', 2015, '150.000 m²', '10 triệu khách/năm', NULL, 'Nhà ga quốc tế hiện đại, có thể mở rộng công suất lên 15 triệu khách/năm.', 'Hoat_Dong'),
+(3, 2, 'T1', 'Nhà ga T1 - Quốc nội', 'Quoc_Noi', 1980, '40.000 m²', '13 triệu khách/năm', NULL, 'Nhà ga quốc nội của sân bay lớn nhất Việt Nam.', 'Hoat_Dong'),
+(4, 2, 'T2', 'Nhà ga T2 - Quốc tế', 'Quoc_Te', 2007, '100.000 m²', '12 triệu khách/năm', NULL, 'Nhà ga quốc tế phục vụ các chuyến bay đến và đi quốc tế.', 'Hoat_Dong'),
+(5, 4, 'T1', 'Nhà ga T1 - Quốc nội', 'Quoc_Noi', 2011, '36.000 m²', '6 triệu khách/năm', NULL, 'Nhà ga quốc nội của sân bay Đà Nẵng.', 'Hoat_Dong'),
+(6, 4, 'T2', 'Nhà ga T2 - Quốc tế', 'Quoc_Te', 2017, '48.000 m²', '4 triệu khách/năm', NULL, 'Nhà ga quốc tế được thiết kế theo kiến trúc đặc trưng của miền Trung.', 'Hoat_Dong'),
+(7, 3, 'T1', 'Nhà ga T1 - Quốc nội', 'Quoc_Noi', 2009, '13.000 m²', '2,5 triệu khách/năm', NULL, 'Nhà ga quốc nội phục vụ Khánh Hòa và Nam Trung Bộ.', 'Hoat_Dong'),
+(8, 3, 'T2', 'Nhà ga T2 - Quốc tế', 'Quoc_Te', 2018, '50.000 m²', '6 triệu khách/năm', NULL, 'Nhà ga quốc tế Cam Ranh có công suất lớn, phục vụ khách quốc tế đến Khánh Hòa.', 'Hoat_Dong'),
+(9, 5, 'T1', 'Nhà ga hành khách Cát Bi', 'Hon_Hop', 2016, NULL, '2 triệu khách/năm', NULL, 'Nhà ga hành khách phục vụ cả chuyến bay nội địa và quốc tế tại Cát Bi.', 'Hoat_Dong'),
+(11, 6, 'T1', 'Nhà ga hành khách Phú Quốc', 'Hon_Hop', 2012, '24.000 m²', '4 triệu khách/năm', NULL, 'Nhà ga hành khách phục vụ cả chuyến bay nội địa và quốc tế tại Phú Quốc.', 'Hoat_Dong'),
+(12, 7, 'T1', 'Nhà ga hành khách Cần Thơ', 'Hon_Hop', 2011, '20.000 m²', '3 triệu khách/năm', NULL, 'Nhà ga hành khách trung tâm vùng Đồng bằng sông Cửu Long.', 'Hoat_Dong'),
+(13, 8, 'T1', 'Nhà ga hành khách Điện Biên', 'Quoc_Noi', 2024, NULL, '500.000 khách/năm', NULL, 'Nhà ga mới được đưa vào khai thác năm 2024, phục vụ tỉnh Điện Biên.', 'Hoat_Dong'),
+(14, 9, 'T1', 'Nhà ga hành khách Thọ Xuân', 'Quoc_Noi', 2013, NULL, '1,2 triệu khách/năm', NULL, 'Nhà ga hành khách phục vụ Thanh Hóa và khu vực Bắc Trung Bộ.', 'Hoat_Dong'),
+(15, 10, 'T1', 'Nhà ga hành khách Đồng Hới', 'Quoc_Noi', 2008, NULL, '500.000 khách/năm', NULL, 'Nhà ga hành khách phục vụ Quảng Bình và vùng Phong Nha - Kẻ Bàng.', 'Hoat_Dong'),
+(16, 11, 'T1', 'Nhà ga hành khách Tuy Hòa', 'Quoc_Noi', 2013, NULL, '1 triệu khách/năm', NULL, 'Nhà ga hành khách phục vụ Phú Yên và khu vực Nam Trung Bộ.', 'Hoat_Dong'),
+(17, 12, 'T1', 'Nhà ga hành khách Chu Lai', 'Quoc_Noi', 2015, NULL, '1 triệu khách/năm', NULL, 'Nhà ga hành khách phục vụ Quảng Nam và vùng kinh tế trọng điểm miền Trung.', 'Hoat_Dong'),
+(18, 13, 'T1', 'Nhà ga hành khách Pleiku', 'Quoc_Noi', 2018, NULL, '1,5 triệu khách/năm', NULL, 'Nhà ga hành khách phục vụ Gia Lai và khu vực Tây Nguyên.', 'Hoat_Dong'),
+(19, 14, 'T1', 'Nhà ga hành khách Phù Cát', 'Quoc_Noi', 2018, NULL, '1,5 triệu khách/năm', NULL, 'Nhà ga hành khách phục vụ Bình Định và vùng duyên hải Nam Trung Bộ.', 'Hoat_Dong'),
+(20, 15, 'T1', 'Nhà ga hành khách Rạch Giá', 'Quoc_Noi', 2013, NULL, '500.000 khách/năm', NULL, 'Nhà ga hành khách phục vụ Kiên Giang và khu vực Tây Nam Bộ.', 'Hoat_Dong');
+
+INSERT INTO `nha_ga` (`id`, `id_san_bay`, `ma_nha_ga`, `ten_nha_ga`, `loai_nha_ga`, `nam_khai_thac`, `dien_tich`, `cong_suat`, `so_do`, `mo_ta`, `trang_thai`) VALUES
+(21, 4, 'T3', 'Nhà ga T3 - Quốc nội', 'Quoc_Noi', NULL, NULL, NULL, NULL, 'Nhà ga T3 phục vụ các chuyến bay nội địa tại Cảng HKQT Đà Nẵng.', 'Hoat_Dong'),
+(22, 2, 'T3', 'Nhà ga T3 - Quốc nội', 'Quoc_Noi', 2025, '112.500 m²', '20 triệu khách/năm', NULL, 'Nhà ga quốc nội mới, khai thác từ tháng 4/2025, giảm tải cho nhà ga T1.', 'Hoat_Dong');
 
 -- --------------------------------------------------------
 
@@ -315,6 +583,7 @@ CREATE TABLE `quay_checkin` (
   `id` int(11) NOT NULL,
   `id_nha_ga` int(11) NOT NULL,
   `so_quay` varchar(20) NOT NULL,
+  `khu_vuc` varchar(50) DEFAULT NULL,
   `trang_thai` enum('Hoat_Dong','Bao_Tri') DEFAULT 'Hoat_Dong'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -322,10 +591,49 @@ CREATE TABLE `quay_checkin` (
 -- Dumping data for table `quay_checkin`
 --
 
-INSERT INTO `quay_checkin` (`id`, `id_nha_ga`, `so_quay`, `trang_thai`) VALUES
-(1, 1, 'A01-A10', 'Hoat_Dong'),
-(2, 1, 'B01-B10', 'Hoat_Dong'),
-(3, 3, 'C01-C15', 'Hoat_Dong');
+INSERT INTO `quay_checkin` (`id`, `id_nha_ga`, `so_quay`, `khu_vuc`, `trang_thai`) VALUES
+(1, 1, 'A01-A12', 'Sảnh A', 'Hoat_Dong'),
+(2, 1, 'B01-B12', 'Sảnh B', 'Hoat_Dong'),
+(3, 3, 'C01-C15', 'Sảnh C', 'Hoat_Dong'),
+(4, 1, 'C01-C10', 'Sảnh C', 'Hoat_Dong'),
+(5, 2, 'D01-D12', 'Sảnh D', 'Hoat_Dong'),
+(6, 2, 'E01-E12', 'Sảnh E', 'Hoat_Dong'),
+(7, 2, 'F01-F10', 'Sảnh F', 'Bao_Tri'),
+(8, 3, 'A01-A12', 'Sảnh A', 'Hoat_Dong'),
+(9, 3, 'B01-B12', 'Sảnh B', 'Hoat_Dong'),
+(10, 4, 'D01-D12', 'Sảnh D', 'Hoat_Dong'),
+(11, 4, 'E01-E12', 'Sảnh E', 'Hoat_Dong'),
+(12, 4, 'F01-F12', 'Sảnh F', 'Hoat_Dong'),
+(13, 5, 'A01-A10', 'Sảnh A', 'Hoat_Dong'),
+(14, 5, 'B01-B10', 'Sảnh B', 'Hoat_Dong'),
+(15, 6, 'C01-C12', 'Sảnh C', 'Hoat_Dong'),
+(16, 6, 'D01-D12', 'Sảnh D', 'Hoat_Dong'),
+(17, 7, 'A01-A08', 'Sảnh A', 'Hoat_Dong'),
+(18, 7, 'B01-B08', 'Sảnh B', 'Hoat_Dong'),
+(19, 8, 'C01-C12', 'Sảnh C', 'Hoat_Dong'),
+(20, 8, 'D01-D12', 'Sảnh D', 'Hoat_Dong'),
+(21, 8, 'E01-E08', 'Sảnh E', 'Bao_Tri'),
+(22, 9, 'A01-A08', 'Sảnh A', 'Hoat_Dong'),
+(23, 9, 'B01-B08', 'Sảnh B', 'Hoat_Dong'),
+(24, 9, 'C01-C10', 'Sảnh C', 'Hoat_Dong'),
+(25, 9, 'D01-D10', 'Sảnh D', 'Hoat_Dong'),
+(26, 11, 'A01-A10', 'Sảnh A', 'Hoat_Dong'),
+(27, 11, 'B01-B10', 'Sảnh B', 'Hoat_Dong'),
+(28, 11, 'C01-C06', 'Sảnh C', 'Hoat_Dong'),
+(29, 12, 'A01-A08', 'Sảnh A', 'Hoat_Dong'),
+(30, 12, 'B01-B08', 'Sảnh B', 'Hoat_Dong'),
+(31, 13, 'A01-A06', 'Sảnh A', 'Hoat_Dong'),
+(32, 13, 'B01-B06', 'Sảnh B', 'Bao_Tri'),
+(33, 14, 'A01-A08', 'Sảnh A', 'Hoat_Dong'),
+(34, 14, 'B01-B08', 'Sảnh B', 'Hoat_Dong'),
+(35, 15, 'A01-A06', 'Sảnh A', 'Hoat_Dong'),
+(36, 16, 'A01-A08', 'Sảnh A', 'Hoat_Dong'),
+(37, 16, 'B01-B08', 'Sảnh B', 'Hoat_Dong'),
+(38, 17, 'A01-A06', 'Sảnh A', 'Hoat_Dong'),
+(39, 18, 'A01-A08', 'Sảnh A', 'Hoat_Dong'),
+(40, 19, 'A01-A08', 'Sảnh A', 'Hoat_Dong'),
+(41, 19, 'B01-B08', 'Sảnh B', 'Hoat_Dong'),
+(42, 20, 'A01-A06', 'Sảnh A', 'Hoat_Dong');
 
 -- --------------------------------------------------------
 
@@ -336,9 +644,14 @@ INSERT INTO `quay_checkin` (`id`, `id_nha_ga`, `so_quay`, `trang_thai`) VALUES
 CREATE TABLE `san_bay` (
   `id` int(11) NOT NULL,
   `ma_iata` varchar(3) NOT NULL,
-  `ten_san_bay` varchar(100) NOT NULL,
+  `ma_icao` varchar(4) DEFAULT NULL,
+  `ten_san_bay` varchar(120) NOT NULL,
+  `ten_ngan` varchar(50) NOT NULL,
   `phan_cap` enum('Quoc_Noi','Quoc_Te') NOT NULL,
   `vi_tri` varchar(255) NOT NULL,
+  `hinh_anh` varchar(255) DEFAULT NULL,
+  `mo_ta` varchar(500) DEFAULT NULL,
+  `thu_tu_hien_thi` int(11) NOT NULL DEFAULT 0,
   `trang_thai` enum('Hoat_Dong','Bao_Tri','Dong_Cua_Khan_Cap') DEFAULT 'Hoat_Dong'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -346,10 +659,22 @@ CREATE TABLE `san_bay` (
 -- Dumping data for table `san_bay`
 --
 
-INSERT INTO `san_bay` (`id`, `ma_iata`, `ten_san_bay`, `phan_cap`, `vi_tri`, `trang_thai`) VALUES
-(1, 'HAN', 'Cảng HKQT Nội Bài', 'Quoc_Te', 'Hà Nội', 'Hoat_Dong'),
-(2, 'SGN', 'Cảng HKQT Tân Sơn Nhất', 'Quoc_Te', 'TP. Hồ Chí Minh', 'Hoat_Dong'),
-(3, 'CXR', 'Cảng HKQT Cam Ranh', 'Quoc_Te', 'Khánh Hòa', 'Hoat_Dong');
+INSERT INTO `san_bay` (`id`, `ma_iata`, `ma_icao`, `ten_san_bay`, `ten_ngan`, `phan_cap`, `vi_tri`, `hinh_anh`, `mo_ta`, `thu_tu_hien_thi`, `trang_thai`) VALUES
+(1, 'HAN', 'VVNB', 'Cảng hàng không quốc tế Nội Bài', 'Nội Bài', 'Quoc_Te', 'Huyện Sóc Sơn, TP. Hà Nội', 'assets/img/san_bay/HAN.jpg', 'Cửa ngõ hàng không quốc tế của Thủ đô, khai thác hai nhà ga T1 (quốc nội) và T2 (quốc tế).', 1, 'Hoat_Dong'),
+(2, 'SGN', 'VVTS', 'Cảng hàng không quốc tế Tân Sơn Nhất', 'Tân Sơn Nhất', 'Quoc_Te', 'Quận Tân Bình, TP. Hồ Chí Minh', 'assets/img/san_bay/SGN.jpg', 'Sân bay lớn nhất Việt Nam về lưu lượng hành khách, gồm T1 (quốc nội) và T2 (quốc tế).', 2, 'Hoat_Dong'),
+(3, 'CXR', 'VVCR', 'Cảng hàng không quốc tế Cam Ranh', 'Cam Ranh', 'Quoc_Te', 'TP. Cam Ranh, tỉnh Khánh Hòa', 'assets/img/san_bay/CXR.jpg', 'Sân bay phục vụ Khánh Hòa và khu vực Nam Trung Bộ, có T1 quốc nội và T2 quốc tế.', 4, 'Hoat_Dong'),
+(4, 'DAD', 'VVDN', 'Cảng hàng không quốc tế Đà Nẵng', 'Đà Nẵng', 'Quoc_Te', 'Quận Hải Châu, TP. Đà Nẵng', 'assets/img/san_bay/DAD.jpg', 'Sân bay trung tâm miền Trung, khai thác T1 quốc nội và T2 quốc tế.', 3, 'Hoat_Dong'),
+(5, 'HPH', 'VVCI', 'Cảng hàng không quốc tế Cát Bi', 'Cát Bi', 'Quoc_Te', 'Quận Hải An, TP. Hải Phòng', 'assets/img/san_bay/HPH.jpg', 'Cửa ngõ hàng không của thành phố cảng và vùng duyên hải Bắc Bộ.', 5, 'Hoat_Dong'),
+(6, 'PQC', 'VVPQ', 'Cảng hàng không quốc tế Phú Quốc', 'Phú Quốc', 'Quoc_Te', 'TP. Phú Quốc, tỉnh Kiên Giang', 'assets/img/san_bay/PQC.jpg', 'Sân bay phục vụ đảo ngọc Phú Quốc với nhà ga hành khách hiện đại.', 6, 'Hoat_Dong'),
+(7, 'VCA', 'VVCT', 'Cảng hàng không quốc tế Cần Thơ', 'Cần Thơ', 'Quoc_Te', 'Quận Bình Thủy, TP. Cần Thơ', 'assets/img/san_bay/VCA.jpg', 'Sân bay trung tâm vùng Đồng bằng sông Cửu Long.', 7, 'Hoat_Dong'),
+(8, 'DIN', 'VVDB', 'Cảng hàng không Điện Biên Phủ', 'Điện Biên', 'Quoc_Noi', 'TP. Điện Biên Phủ, tỉnh Điện Biên', 'assets/img/san_bay/DIN.jpg', 'Sân bay phục vụ tỉnh Điện Biên, nhà ga mới đưa vào khai thác năm 2024.', 1, 'Hoat_Dong'),
+(9, 'THD', 'VVTX', 'Cảng hàng không Thọ Xuân', 'Thọ Xuân', 'Quoc_Noi', 'Huyện Thọ Xuân, tỉnh Thanh Hóa', 'assets/img/san_bay/THD.jpg', 'Sân bay phục vụ Thanh Hóa và khu vực Bắc Trung Bộ.', 2, 'Hoat_Dong'),
+(10, 'VDH', 'VVDH', 'Cảng hàng không Đồng Hới', 'Đồng Hới', 'Quoc_Noi', 'TP. Đồng Hới, tỉnh Quảng Bình', 'assets/img/san_bay/VDH.jpg', 'Sân bay phục vụ Quảng Bình, gần Di sản Phong Nha - Kẻ Bàng.', 3, 'Hoat_Dong'),
+(11, 'TBB', 'VVTH', 'Cảng hàng không Tuy Hòa', 'Tuy Hòa', 'Quoc_Noi', 'TP. Tuy Hòa, tỉnh Phú Yên', 'assets/img/san_bay/TBB.jpg', 'Sân bay phục vụ Phú Yên và khu vực Nam Trung Bộ.', 4, 'Hoat_Dong'),
+(12, 'VCL', 'VVCA', 'Cảng hàng không Chu Lai', 'Chu Lai', 'Quoc_Noi', 'Huyện Núi Thành, tỉnh Quảng Nam', 'assets/img/san_bay/VCL.jpg', 'Sân bay phục vụ Quảng Nam và vùng kinh tế trọng điểm miền Trung.', 5, 'Hoat_Dong'),
+(13, 'PXU', 'VVPK', 'Cảng hàng không Pleiku', 'Pleiku', 'Quoc_Noi', 'TP. Pleiku, tỉnh Gia Lai', 'assets/img/san_bay/PXU.jpg', 'Sân bay phục vụ Gia Lai và khu vực Tây Nguyên.', 6, 'Hoat_Dong'),
+(14, 'UIH', 'VVPC', 'Cảng hàng không Phù Cát', 'Phù Cát', 'Quoc_Noi', 'Huyện Phù Cát, tỉnh Bình Định', 'assets/img/san_bay/UIH.jpg', 'Sân bay phục vụ Bình Định và vùng duyên hải Nam Trung Bộ.', 7, 'Hoat_Dong'),
+(15, 'VKG', 'VVRG', 'Cảng hàng không Rạch Giá', 'Rạch Giá', 'Quoc_Noi', 'TP. Rạch Giá, tỉnh Kiên Giang', 'assets/img/san_bay/VKG.jpg', 'Sân bay phục vụ Kiên Giang và khu vực Tây Nam Bộ.', 8, 'Hoat_Dong');
 
 -- --------------------------------------------------------
 
@@ -407,6 +732,7 @@ INSERT INTO `yeu_cau_bao_tri` (`id`, `id_thiet_bi`, `mo_ta_su_co`, `hinh_anh_min
 --
 ALTER TABLE `bang_chuyen_hanh_ly`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_bang_chuyen_nha_ga` (`id_nha_ga`,`so_bang_chuyen`),
   ADD KEY `id_nha_ga` (`id_nha_ga`);
 
 --
@@ -434,6 +760,7 @@ ALTER TABLE `chuyen_bay_ngay`
 --
 ALTER TABLE `cua_ra_may_bay`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_cua_ra_nha_ga` (`id_nha_ga`,`so_cua`),
   ADD KEY `id_nha_ga` (`id_nha_ga`);
 
 --
@@ -495,6 +822,7 @@ ALTER TABLE `nhat_ky_trang_thai_bay`
 --
 ALTER TABLE `nha_ga`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_nha_ga_san_bay_ma` (`id_san_bay`,`ma_nha_ga`),
   ADD KEY `id_san_bay` (`id_san_bay`);
 
 --
@@ -502,6 +830,7 @@ ALTER TABLE `nha_ga`
 --
 ALTER TABLE `quay_checkin`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_quay_checkin_nha_ga` (`id_nha_ga`,`so_quay`),
   ADD KEY `id_nha_ga` (`id_nha_ga`);
 
 --
@@ -509,7 +838,9 @@ ALTER TABLE `quay_checkin`
 --
 ALTER TABLE `san_bay`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `ma_iata` (`ma_iata`);
+  ADD UNIQUE KEY `ma_iata` (`ma_iata`),
+  ADD UNIQUE KEY `ma_icao` (`ma_icao`),
+  ADD KEY `thu_tu_hien_thi` (`thu_tu_hien_thi`);
 
 --
 -- Indexes for table `thiet_bi_san_bay`
@@ -533,7 +864,7 @@ ALTER TABLE `yeu_cau_bao_tri`
 -- AUTO_INCREMENT for table `bang_chuyen_hanh_ly`
 --
 ALTER TABLE `bang_chuyen_hanh_ly`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT for table `bang_gia_dich_vu`
@@ -551,7 +882,7 @@ ALTER TABLE `chuyen_bay_ngay`
 -- AUTO_INCREMENT for table `cua_ra_may_bay`
 --
 ALTER TABLE `cua_ra_may_bay`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=141;
 
 --
 -- AUTO_INCREMENT for table `don_vi_mat_dat`
@@ -599,19 +930,19 @@ ALTER TABLE `nhat_ky_trang_thai_bay`
 -- AUTO_INCREMENT for table `nha_ga`
 --
 ALTER TABLE `nha_ga`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `quay_checkin`
 --
 ALTER TABLE `quay_checkin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `san_bay`
 --
 ALTER TABLE `san_bay`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `thiet_bi_san_bay`
@@ -705,6 +1036,24 @@ ALTER TABLE `thiet_bi_san_bay`
 --
 ALTER TABLE `yeu_cau_bao_tri`
   ADD CONSTRAINT `yeu_cau_bao_tri_ibfk_1` FOREIGN KEY (`id_thiet_bi`) REFERENCES `thiet_bi_san_bay` (`id`) ON DELETE CASCADE;
+-- Cap nhat anh so do nha ga HAN T1/T2
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/HAN-T1-01.jpg' WHERE `id` = 1;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/HAN-T2-01.jpg' WHERE `id` = 2;
+
+-- Cap nhat anh so do nha ga CXR T1/T2
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/CXR-T1-01.jpg' WHERE `id` = 7;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/CXR-T2-01.jpg' WHERE `id` = 8;
+
+-- Cap nhat anh so do nha ga VCA, HPH, PQC, SGN, DAD
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/VCA-T1-01.jpg' WHERE `id` = 12;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/HPH-T1-01.jpg' WHERE `id` = 9;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/PQC-T1-01.jpg' WHERE `id` = 11;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/SGN-T1-01.jpg' WHERE `id` = 3;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/SGN-T2-01.jpg' WHERE `id` = 4;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/SGN-T3-01.jpg' WHERE `id` = 22;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/DAD-T1-01.jpg' WHERE `id` = 5;
+UPDATE `nha_ga` SET `so_do` = 'assets/img/so_do_nha_ga/DAD-T3-01.jpg' WHERE `id` = 21;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

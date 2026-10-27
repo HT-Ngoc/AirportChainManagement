@@ -94,10 +94,10 @@ $addUrl = $adminUrl(array_merge($tabParams, ['them' => 1]));
   </div>
 </div>
 
-<div class="ht-admin-tabs">
+<div class="ht-admin-tabs" id="ht-admin-tabs">
   <?php foreach ($tabMeta as $key => $meta): ?>
     <?php $isActive = $tab === $key; ?>
-    <a href="<?= $e($adminUrl(['tab' => $key])) ?>" class="<?= $isActive ? 'is-active' : '' ?>">
+    <a href="<?= $e($adminUrl(['tab' => $key]) . '#ht-admin-tabs') ?>" class="<?= $isActive ? 'is-active' : '' ?>">
       <i class="bi <?= $e($meta['icon']) ?>"></i>
       <?= $e($meta['label']) ?>
       <?php if ($key === 'san_bay'): ?>

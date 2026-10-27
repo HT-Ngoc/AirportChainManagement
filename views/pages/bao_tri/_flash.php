@@ -21,8 +21,7 @@ foreach ($flashMessages as $flashKey => $flashType):
     $flashText = (string) $_SESSION[$flashKey];
     unset($_SESSION[$flashKey]);
 ?>
-<div class="alert alert-<?= $flashType ?> alert-dismissible fade show" role="alert">
+<div class="alert alert-<?= $flashType ?>" role="alert">
     <?= htmlspecialchars($flashText, ENT_QUOTES, 'UTF-8') ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
 </div>
 <?php endforeach; ?>

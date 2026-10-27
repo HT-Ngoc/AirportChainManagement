@@ -95,163 +95,7 @@ if (isset($_GET['open']) && $_GET['open'] === 'create' && !empty($_SESSION['flas
     unset($_SESSION['flash_error']);
 }
 
-$pageScripts = <<<'HTML'
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var modalElement = document.getElementById('taoPhieuModal');
 
-    // Tự mở lại modal khi quay về sau lỗi nhập liệu
-    if (modalElement) {
-        if (window.bootstrap && new URLSearchParams(window.location.search).get('open') === 'create') {
-            bootstrap.Modal.getOrCreateInstance(modalElement).show();
-        }
-
-        modalElement.addEventListener('shown.bs.modal', function () {
-            var deviceSelect = document.getElementById('modal_id_thiet_bi');
-            if (deviceSelect) deviceSelect.focus();
-        });
-
-        modalElement.addEventListener('hidden.bs.modal', function () {
-            var url = new URL(window.location.href);
-            if (url.searchParams.get('open') === 'create') {
-                url.searchParams.delete('open');
-                window.history.replaceState({}, '', url.toString());
-            }
-        });
-    }
-
-    var imageInput = document.getElementById('modal_hinh_anh_minh_hoa');
-    var imagePreview = document.getElementById('imagePreview');
-    var imagePreviewImg = document.getElementById('imagePreviewImg');
-    var imageError = document.getElementById('imageError');
-    var dropZone = document.getElementById('imageDropZone');
-
-    function setImageError(message) {
-        if (!imageError) return;
-        imageError.textContent = message || '';
-        imageError.classList.toggle('d-none', !message);
-    }
-
-    function resetImagePreview() {
-        if (imagePreviewImg) imagePreviewImg.src = '';
-        if (imagePreview) imagePreview.classList.add('d-none');
-    }
-
-    function showImagePreview() {
-        resetImagePreview();
-        setImageError('');
-
-        if (!imageInput || !imageInput.files || !imageInput.files[0]) return;
-
-        var file = imageInput.files[0];
-        if (file.size > 5 * 1024 * 1024) {
-            imageInput.value = '';
-            setImageError('Ảnh vượt quá 5 MB. Vui lòng chọn ảnh nhỏ hơn.');
-            return;
-        }
-        if (!file.type.match(/^image\/(jpeg|jpg|png|gif)$/)) {
-            imageInput.value = '';
-            setImageError('Chỉ chấp nhận ảnh JPG, PNG hoặc GIF.');
-            return;
-        }
-
-        if (imagePreviewImg) imagePreviewImg.src = URL.createObjectURL(file);
-        if (imagePreview) imagePreview.classList.remove('d-none');
-    }
-
-    if (imageInput) imageInput.addEventListener('change', showImagePreview);
-
-    if (dropZone && imageInput) {
-        ['dragenter', 'dragover'].forEach(function (evt) {
-            dropZone.addEventListener(evt, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.classList.add('border-danger');
-            });
-        });
-        ['dragleave', 'drop'].forEach(function (evt) {
-            dropZone.addEventListener(evt, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.classList.remove('border-danger');
-            });
-        });
-        dropZone.addEventListener('drop', function (e) {
-            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-                imageInput.files = e.dataTransfer.files;
-                showImagePreview();
-            }
-        });
-    }
-
-    var description = document.getElementById('modal_mo_ta_su_co');
-    var descriptionCount = document.getElementById('moTaCount');
-    function updateDescriptionCount() {
-        if (description && descriptionCount) descriptionCount.textContent = description.value.length;
-    }
-    if (description) {
-        description.addEventListener('input', updateDescriptionCount);
-        updateDescriptionCount();
-    }
-
-    // Bộ lọc phiếu bảo trì
-    var ticketTable = document.getElementById('ticketTable');
-    var ticketSearch = document.getElementById('ticketSearch');
-    var ticketStatusFilter = document.getElementById('ticketStatusFilter');
-    var ticketPriorityFilter = document.getElementById('ticketPriorityFilter');
-    var ticketResetFilters = document.getElementById('ticketResetFilters');
-    var ticketVisibleCount = document.getElementById('ticketVisibleCount');
-    var ticketNoResultRow = document.getElementById('ticketNoResultRow');
-
-    function normalizeText(value) {
-        return (value || '').toString().toLocaleLowerCase('vi')
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/đ/g, 'd');
-    }
-
-    if (ticketTable && ticketSearch && ticketStatusFilter && ticketPriorityFilter) {
-        var ticketRows = Array.prototype.slice.call(ticketTable.querySelectorAll('tbody tr[data-ticket-search]'));
-
-        function applyTicketFilters() {
-            var keyword = normalizeText(ticketSearch.value.trim());
-            var status = ticketStatusFilter.value;
-            var priority = ticketPriorityFilter.value;
-            var visible = 0;
-
-            ticketRows.forEach(function (row) {
-                var matchKeyword = !keyword || normalizeText(row.getAttribute('data-ticket-search')).indexOf(keyword) !== -1;
-                var matchStatus = !status || row.getAttribute('data-ticket-status') === status;
-                var matchPriority = !priority || row.getAttribute('data-ticket-priority') === priority;
-                var show = matchKeyword && matchStatus && matchPriority;
-
-                row.classList.toggle('d-none', !show);
-                if (show) visible++;
-            });
-
-            if (ticketVisibleCount) ticketVisibleCount.textContent = visible;
-            if (ticketNoResultRow) ticketNoResultRow.classList.toggle('d-none', visible !== 0 || ticketRows.length === 0);
-        }
-
-        [ticketSearch, ticketStatusFilter, ticketPriorityFilter].forEach(function (element) {
-            element.addEventListener('input', applyTicketFilters);
-            element.addEventListener('change', applyTicketFilters);
-        });
-
-        if (ticketResetFilters) {
-            ticketResetFilters.addEventListener('click', function () {
-                ticketSearch.value = '';
-                ticketStatusFilter.value = '';
-                ticketPriorityFilter.value = '';
-                applyTicketFilters();
-                ticketSearch.focus();
-            });
-        }
-
-        applyTicketFilters();
-    }
-});
-</script>
-HTML;
 
 // Giá trị mặc định phòng khi view được nạp trực tiếp
 $thong_ke = array_merge([
@@ -262,6 +106,40 @@ $thong_ke = array_merge([
 ], $thong_ke ?? []);
 
 $totalTickets = count($tickets);
+
+/* ------------------------------------------------------------
+ * Lọc danh sách phiếu phía máy chủ (thay cho bộ lọc JavaScript cũ).
+ * Tham số GET: q, trang_thai, muc_do.
+ * ------------------------------------------------------------ */
+$ticketQ        = trim((string) ($_GET['q'] ?? ''));
+$ticketStatus   = trim((string) ($_GET['trang_thai'] ?? ''));
+$ticketPriority = trim((string) ($_GET['muc_do'] ?? ''));
+
+$totalTicketsGoc = $totalTickets;
+
+$tickets = array_values(array_filter($tickets, static function (array $ticket) use ($ticketQ, $ticketStatus, $ticketPriority): bool {
+    if ($ticketQ !== '') {
+        $maPhieu = '#BT-' . sprintf('%03d', (int) $ticket['id']);
+        $haystack = $maPhieu . ' ' . $ticket['ten_thiet_bi'] . ' ' . $ticket['mo_ta_su_co'];
+        if (mb_stripos($haystack, $ticketQ, 0, 'UTF-8') === false) {
+            return false;
+        }
+    }
+    if ($ticketStatus !== '' && (string) $ticket['trang_thai_xu_ly'] !== $ticketStatus) {
+        return false;
+    }
+    if ($ticketPriority !== '' && (string) $ticket['muc_do'] !== $ticketPriority) {
+        return false;
+    }
+    return true;
+}));
+
+$soPhieuHienThi = count($tickets);
+$urlDongModal   = baoTriUrl('index.php', array_filter([
+    'q'          => $ticketQ,
+    'trang_thai' => $ticketStatus,
+    'muc_do'     => $ticketPriority,
+], static fn($v) => $v !== ''));
 
 ob_start();
 ?>
@@ -293,7 +171,7 @@ ob_start();
                     <div class="d-flex align-items-baseline gap-1">
                         <h3 class="mb-0 fw-bold"><?= (int) $thong_ke['dang_mo'] ?></h3>
                         <?php if ($totalTickets > 0): ?>
-                            <span class="small text-secondary d-none d-sm-inline">/ <?= $totalTickets ?></span>
+                            <span class="small text-secondary d-none d-sm-inline">/ <?= $totalTicketsGoc ?></span>
                         <?php endif; ?>
                     </div>
                     <div class="small text-secondary text-truncate d-none d-sm-block">Cần theo dõi</div>
@@ -350,51 +228,52 @@ ob_start();
         <div class="flex-grow-1">
             <h3 class="card-title mb-0 float-none">
                 <i class="bi bi-clipboard-check me-2 text-primary"></i>Danh sách phiếu bảo trì
-                <span class="badge bg-body-tertiary text-body border ms-1 align-middle fw-normal" title="Tổng số phiếu"><?= $totalTickets ?></span>
+                <span class="badge bg-body-tertiary text-body border ms-1 align-middle fw-normal" title="Tổng số phiếu"><?= $totalTicketsGoc ?></span>
             </h3>
             <div class="small text-secondary mt-1">Theo dõi và cập nhật tiến độ xử lý</div>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#taoPhieuModal">
+            <a href="#taoPhieuModal" class="btn btn-sm btn-primary">
                 <i class="bi bi-plus-lg me-1"></i>Tạo phiếu bảo trì
-            </button>
+            </a>
         </div>
     </div>
 
-    <?php if (!empty($tickets)): ?>
+    <?php if ($totalTicketsGoc > 0): ?>
         <div class="card-body pb-2">
-            <div class="row g-2">
+            <form method="get" action="<?= htmlspecialchars(baoTriUrl('index.php'), ENT_QUOTES, 'UTF-8') ?>" class="row g-2">
                 <div class="col-12 col-lg-5">
                     <label for="ticketSearch" class="form-label small text-secondary mb-1">Tìm kiếm</label>
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-body-tertiary"><i class="bi bi-search"></i></span>
-                        <input type="search" id="ticketSearch" class="form-control" placeholder="Mã phiếu, thiết bị hoặc mô tả...">
+                        <span class="input-group-text bg-body-tertiary"><i class="bi bi-search" aria-hidden="true"></i></span>
+                        <input type="search" id="ticketSearch" name="q" value="<?= htmlspecialchars($ticketQ, ENT_QUOTES, 'UTF-8') ?>" class="form-control" placeholder="Mã phiếu, thiết bị hoặc mô tả...">
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <label for="ticketStatusFilter" class="form-label small text-secondary mb-1">Trạng thái</label>
-                    <select id="ticketStatusFilter" class="form-select form-select-sm">
+                    <select id="ticketStatusFilter" name="trang_thai" class="form-select form-select-sm">
                         <option value="">Tất cả trạng thái</option>
                         <?php foreach ($statusLabels as $key => $label): ?>
-                            <option value="<?= $key ?>"><?= $label ?></option>
+                            <option value="<?= $key ?>"<?= $ticketStatus === $key ? ' selected' : '' ?>><?= $label ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="col-6 col-lg-4">
                     <label for="ticketPriorityFilter" class="form-label small text-secondary mb-1">Mức độ</label>
-                    <select id="ticketPriorityFilter" class="form-select form-select-sm">
+                    <select id="ticketPriorityFilter" name="muc_do" class="form-select form-select-sm">
                         <option value="">Tất cả mức độ</option>
                         <?php foreach ($priorityLabels as $key => $label): ?>
-                            <option value="<?= $key ?>"><?= $label ?></option>
+                            <option value="<?= $key ?>"<?= $ticketPriority === $key ? ' selected' : '' ?>><?= $label ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-            </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-primary">Lọc phiếu</button>
+                </div>
+            </form>
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-secondary mt-2">
-                <span>Hiển thị <strong id="ticketVisibleCount"><?= $totalTickets ?></strong> / <strong><?= $totalTickets ?></strong> phiếu</span>
-                <button type="button" id="ticketResetFilters" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i>Xóa lọc
-                </button>
+                <span>Hiển thị <strong><?= $soPhieuHienThi ?></strong> / <strong><?= $totalTicketsGoc ?></strong> phiếu</span>
+                <a href="<?= htmlspecialchars(baoTriUrl('index.php'), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
             </div>
         </div>
     <?php endif; ?>
@@ -485,20 +364,21 @@ ob_start();
                 <?php else: ?>
                     <tr>
                         <td colspan="4" class="text-center py-5">
-                            <div class="text-secondary mb-2"><i class="bi bi-clipboard-x fs-1"></i></div>
-                            <div class="fw-semibold">Chưa có phiếu bảo trì nào</div>
-                            <div class="small text-secondary mb-3">Tạo phiếu đầu tiên để ghi nhận sự cố và theo dõi xử lý.</div>
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#taoPhieuModal">
-                                <i class="bi bi-plus-lg me-1"></i>Tạo phiếu bảo trì
-                            </button>
+                            <?php if ($totalTicketsGoc > 0): ?>
+                                <div class="fw-semibold">Không tìm thấy phiếu phù hợp với bộ lọc.</div>
+                                <div class="small text-secondary mb-3">Hãy xóa bớt điều kiện lọc để xem toàn bộ danh sách.</div>
+                                <a href="<?= htmlspecialchars(baoTriUrl('index.php'), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+                            <?php else: ?>
+                                <div class="text-secondary mb-2"><i class="bi bi-clipboard-x fs-1"></i></div>
+                                <div class="fw-semibold">Chưa có phiếu bảo trì nào</div>
+                                <div class="small text-secondary mb-3">Tạo phiếu đầu tiên để ghi nhận sự cố và theo dõi xử lý.</div>
+                                <a href="#taoPhieuModal" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-plus-lg me-1"></i>Tạo phiếu bảo trì
+                                </a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endif; ?>
-                <tr id="ticketNoResultRow" class="d-none">
-                    <td colspan="4" class="text-center py-4 text-secondary">
-                        <i class="bi bi-search me-1"></i> Không tìm thấy phiếu phù hợp với bộ lọc.
-                    </td>
-                </tr>
             </tbody>
         </table>
     </div>
@@ -512,23 +392,12 @@ ob_start();
     #taoPhieuModal .modal-icon { width: 38px; height: 38px; flex: 0 0 38px; }
     #taoPhieuModal .form-label { font-size: .8125rem; }
     #taoPhieuModal .severity-group .btn { white-space: nowrap; font-size: .8125rem; }
-    #taoPhieuModal .image-dropzone {
-        border: 2px dashed var(--bs-border-color);
-        transition: border-color .15s ease, background-color .15s ease;
-    }
-    #taoPhieuModal .image-dropzone:hover { background-color: var(--bs-tertiary-bg); }
-    #taoPhieuModal #imagePreviewImg {
-        max-height: 100px;
-        width: 100%;
-        object-fit: contain;
-        background: var(--bs-body-bg);
-    }
 </style>
 
-<div class="modal fade" id="taoPhieuModal" tabindex="-1" aria-labelledby="taoPhieuModalLabel" aria-hidden="true">
+<div class="modal fade<?= $modalError !== null ? ' is-open' : '' ?>" id="taoPhieuModal" tabindex="-1" aria-labelledby="taoPhieuModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content shadow-lg">
-            <form action="<?= baoTriUrl('index.php') ?>" method="POST" enctype="multipart/form-data">
+            <form action="<?= htmlspecialchars(baoTriUrl('index.php'), ENT_QUOTES, 'UTF-8') ?>" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="store_ticket">
                 <div class="modal-header border-0 px-3 py-2">
                     <div class="d-flex align-items-center gap-2">
@@ -537,7 +406,7 @@ ob_start();
                         </span>
                         <h5 class="modal-title mb-0 fs-5" id="taoPhieuModalLabel">Tạo phiếu bảo trì</h5>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    <a href="<?= htmlspecialchars($urlDongModal, ENT_QUOTES, 'UTF-8') ?>" class="acv-close" aria-label="Đóng">&times;</a>
                 </div>
 
                 <div class="modal-body px-3 py-3">
@@ -576,12 +445,9 @@ ob_start();
                             </div>
 
                             <div class="mb-2">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <label for="modal_mo_ta_su_co" class="form-label fw-semibold mb-0">
-                                        Mô tả sự cố <span class="text-danger">*</span>
-                                    </label>
-                                    <span class="small text-secondary"><span id="moTaCount">0</span>/1000</span>
-                                </div>
+                                <label for="modal_mo_ta_su_co" class="form-label fw-semibold mb-0">
+                                    Mô tả sự cố <span class="text-danger">*</span>
+                                </label>
                                 <textarea name="mo_ta_su_co" id="modal_mo_ta_su_co" class="form-control form-control-sm mt-1" rows="3"
                                           maxlength="1000" placeholder="Ví dụ: Đèn tín hiệu tại đường lăn A bị chập, không sáng khi thử nghiệm..."
                                           required></textarea>
@@ -609,24 +475,12 @@ ob_start();
                         </div>
 
                         <div class="col-lg-5">
-                            <label class="form-label fw-semibold">
+                            <label for="modal_hinh_anh_minh_hoa" class="form-label fw-semibold">
                                 Hình ảnh minh họa <span class="text-secondary fw-normal">(không bắt buộc)</span>
                             </label>
-                            <label for="modal_hinh_anh_minh_hoa" id="imageDropZone"
-                                   class="image-dropzone d-flex flex-column align-items-center justify-content-center text-center rounded-3 bg-body-tertiary p-3 w-100"
-                                   style="cursor: pointer; min-height: 150px;">
-                                <i class="bi bi-cloud-arrow-up fs-3 text-secondary"></i>
-                                <span class="small fw-semibold mt-1">Chọn ảnh hoặc kéo thả</span>
-                                <span class="text-secondary" style="font-size: .72rem;">JPG, PNG, GIF · tối đa 5 MB</span>
-                            </label>
-                            <input type="file" name="hinh_anh_minh_hoa" id="modal_hinh_anh_minh_hoa" class="d-none"
+                            <input type="file" name="hinh_anh_minh_hoa" id="modal_hinh_anh_minh_hoa" class="form-control form-control-sm"
                                    accept="image/png, image/jpeg, image/jpg, image/gif">
-
-                            <div id="imageError" class="small text-danger mt-1 d-none"></div>
-
-                            <div id="imagePreview" class="mt-2 d-none">
-                                <img id="imagePreviewImg" src="" alt="Ảnh minh họa sự cố" class="img-fluid rounded border">
-                            </div>
+                            <div class="form-text">JPG, PNG hoặc GIF, tối đa 5 MB.</div>
                         </div>
                     </div>
                 </div>
@@ -636,7 +490,7 @@ ob_start();
                         <i class="bi bi-info-circle me-1"></i> Thiết bị chuyển sang <strong>Hỏng</strong> · Phiếu ở trạng thái <strong>Mới</strong>.
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-light border px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <a href="<?= htmlspecialchars($urlDongModal, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-light border px-3">Hủy bỏ</a>
                         <button type="submit" class="btn btn-sm btn-danger px-3">
                             <i class="bi bi-send me-1"></i> Gửi yêu cầu
                         </button>

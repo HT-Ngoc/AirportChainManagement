@@ -386,6 +386,19 @@ class HaTangController
             $this->redirectAfterPost();
         }
 
+        /* ------------------------------------------------------------
+         * BƯỚC XÁC NHẬN XÓA (không dùng confirm() của JavaScript)
+         * Lần gửi đầu tiên chưa có $_POST['xac_nhan']: không xóa ngay
+         * mà lưu lại yêu cầu, quay về danh sách và hiện hộp thoại
+         * xác nhận. Chỉ khi người dùng bấm "Xóa" trong hộp thoại
+         * (form gửi kèm xac_nhan=1) mới thực hiện xóa.
+         * ------------------------------------------------------------ */
+        $deleteActions = ['xoa_san_bay', 'xoa_nha_ga', 'xoa_cua_ra', 'xoa_quay', 'xoa_bang_chuyen'];
+        if (in_array($action, $deleteActions, true) && empty($_POST['xac_nhan'])) {
+            $_SESSION['ha_tang_xac_nhan_xoa'] = $_POST;
+            $this->redirectAfterPost();
+        }
+
         switch ($action) {
             case 'them_san_bay':
                 $this->saveSanBay(false);
