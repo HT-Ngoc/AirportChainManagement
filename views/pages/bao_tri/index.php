@@ -27,6 +27,9 @@ foreach ($thiet_bi_list as $tb) {
     $thietBiTheoSanBay[$tenSanBay][] = $tb;
 }
 
+// Thiết bị được chọn sẵn khi mở modal tạo phiếu từ trang chi tiết thiết bị.
+$selectedThietBiId = (int) ($_GET['id_thiet_bi'] ?? 0);
+
 $pageTitle  = 'Bảo trì & khắc phục';
 $pageHeader = 'Bảo trì & khắc phục';
 $navActive    = 'bao_tri';
@@ -100,9 +103,10 @@ $trangThaiThietBiLabels = [
     'Hong'    => 'Hỏng',
 ];
 
-// Tự mở lại modal khi vừa có lỗi nhập liệu
+// Tự mở modal khi được yêu cầu (?open=create) hoặc vừa có lỗi nhập liệu
+$modalOpen  = isset($_GET['open']) && $_GET['open'] === 'create';
 $modalError = null;
-if (isset($_GET['open']) && $_GET['open'] === 'create' && !empty($_SESSION['flash_error'])) {
+if ($modalOpen && !empty($_SESSION['flash_error'])) {
     $modalError = (string) $_SESSION['flash_error'];
     unset($_SESSION['flash_error']);
 }
@@ -121,11 +125,22 @@ $totalTickets = count($tickets);
 
 /* ------------------------------------------------------------
  * Lọc danh sách phiếu phía máy chủ (thay cho bộ lọc JavaScript cũ).
- * Tham số GET: q, trang_thai, muc_do.
+ * Tham số GET: q, trang_thai, muc_do, thiet_bi.
  * ------------------------------------------------------------ */
 $ticketQ        = trim((string) ($_GET['q'] ?? ''));
 $ticketStatus   = trim((string) ($_GET['trang_thai'] ?? ''));
 $ticketPriority = trim((string) ($_GET['muc_do'] ?? ''));
+$ticketThietBi  = (int) ($_GET['thiet_bi'] ?? 0);
+
+$ticketThietBiName = '';
+if ($ticketThietBi > 0) {
+    foreach ($thiet_bi_list as $tb) {
+        if ((int) $tb['id'] === $ticketThietBi) {
+            $ticketThietBiName = (string) $tb['ten_thiet_bi'];
+            break;
+        }
+    }
+}
 
 $totalTicketsGoc = $totalTickets;
 
@@ -137,7 +152,10 @@ foreach ($tickets as $ticketItem) {
     }
 }
 
-$tickets = array_values(array_filter($tickets, static function (array $ticket) use ($ticketQ, $ticketStatus, $ticketPriority): bool {
+$tickets = array_values(array_filter($tickets, static function (array $ticket) use ($ticketQ, $ticketStatus, $ticketPriority, $ticketThietBi): bool {
+    if ($ticketThietBi > 0 && (int) $ticket['id_thiet_bi'] !== $ticketThietBi) {
+        return false;
+    }
     if ($ticketQ !== '') {
         $maPhieu = '#BT-' . sprintf('%03d', (int) $ticket['id']);
         $haystack = $maPhieu . ' ' . $ticket['ten_thiet_bi'] . ' ' . $ticket['mo_ta_su_co'];
@@ -159,6 +177,7 @@ $urlDongModal   = baoTriUrl('index.php', array_filter([
     'q'          => $ticketQ,
     'trang_thai' => $ticketStatus,
     'muc_do'     => $ticketPriority,
+    'thiet_bi'   => $ticketThietBi > 0 ? $ticketThietBi : '',
 ], static fn($v) => $v !== ''));
 
 $openRatio = $totalTicketsGoc > 0
@@ -175,11 +194,12 @@ $deviceMaintenanceRatio = $deviceTotal > 0
     ? min(100, (int) round(((int) $thong_ke['thiet_bi_bao_tri'] / $deviceTotal) * 100))
     : 0;
 
-$ticketQuickUrl = static function (string $status) use ($ticketQ, $ticketPriority): string {
+$ticketQuickUrl = static function (string $status) use ($ticketQ, $ticketPriority, $ticketThietBi): string {
     return baoTriUrl('index.php', array_filter([
         'q'          => $ticketQ,
         'trang_thai' => $status,
         'muc_do'     => $ticketPriority,
+        'thiet_bi'   => $ticketThietBi > 0 ? $ticketThietBi : '',
     ], static fn($v) => $v !== ''));
 };
 
@@ -288,6 +308,24 @@ ob_start();
         </div>
     </div>
 
+    <?php if ($ticketThietBi > 0): ?>
+        <div class="px-3 pt-3">
+            <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 mb-0 py-2">
+                <i class="bi bi-funnel-fill"></i>
+                <div class="small">
+                    Đang xem phiếu của thiết bị
+                    <strong><?= htmlspecialchars($ticketThietBiName !== '' ? $ticketThietBiName : 'TB-' . sprintf('%03d', $ticketThietBi), ENT_QUOTES, 'UTF-8') ?></strong>.
+                </div>
+                <a href="<?= htmlspecialchars(baoTriUrl('chi_tiet_thiet_bi.php', ['id' => $ticketThietBi]), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-primary ms-auto">
+                    <i class="bi bi-eye me-1"></i>Xem thiết bị
+                </a>
+                <a href="<?= htmlspecialchars(baoTriUrl('index.php'), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i>Bỏ lọc
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <?php if ($totalTicketsGoc > 0): ?>
         <div class="card-body pb-2">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -304,6 +342,9 @@ ob_start();
 
             <div class="maint-toolbar">
                 <form method="get" action="<?= htmlspecialchars(baoTriUrl('index.php'), ENT_QUOTES, 'UTF-8') ?>" class="row g-2">
+                    <?php if ($ticketThietBi > 0): ?>
+                        <input type="hidden" name="thiet_bi" value="<?= (int) $ticketThietBi ?>">
+                    <?php endif; ?>
                     <div class="col-12 col-lg-5">
                         <label for="ticketSearch" class="form-label small text-secondary mb-1">Tìm kiếm</label>
                         <div class="input-group input-group-sm">
@@ -390,7 +431,9 @@ ob_start();
                             <td style="min-width: 230px; white-space: normal;">
                                 <div class="d-flex align-items-start gap-3">
                                     <div class="flex-grow-1" style="min-width: 0;">
-                                        <div class="fw-semibold"><?= htmlspecialchars($ticket['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?></div>
+                                        <a href="<?= htmlspecialchars(baoTriUrl('chi_tiet_thiet_bi.php', ['id' => (int) $ticket['id_thiet_bi']]), ENT_QUOTES, 'UTF-8') ?>" class="fw-semibold text-decoration-none" title="Xem chi tiết và lịch sử bảo trì của thiết bị">
+                                            <?= htmlspecialchars($ticket['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?>
+                                        </a>
                                         <div class="small text-secondary maint-description" title="<?= htmlspecialchars($ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8') ?>">
                                             <?= htmlspecialchars($ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8') ?>
                                         </div>
@@ -460,7 +503,7 @@ ob_start();
 </div>
 
 <!--begin::Modal tạo phiếu bảo trì-->
-<div class="modal fade maint-modal maint-modal--ticket<?= $modalError !== null ? ' is-open' : '' ?>" id="taoPhieuModal" tabindex="-1" aria-labelledby="taoPhieuModalLabel" aria-hidden="true">
+<div class="modal fade maint-modal maint-modal--ticket<?= $modalOpen ? ' is-open' : '' ?>" id="taoPhieuModal" tabindex="-1" aria-labelledby="taoPhieuModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content shadow-lg">
             <form action="<?= htmlspecialchars(baoTriUrl('index.php'), ENT_QUOTES, 'UTF-8') ?>" method="POST" enctype="multipart/form-data">
@@ -501,7 +544,7 @@ ob_start();
                                         <?php foreach ($thietBiTheoSanBay as $tenSanBay => $dsThietBi): ?>
                                             <optgroup label="<?= htmlspecialchars($tenSanBay, ENT_QUOTES, 'UTF-8') ?>">
                                                 <?php foreach ($dsThietBi as $tb): ?>
-                                                    <option value="<?= (int) $tb['id'] ?>"><?= htmlspecialchars($tb['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?> — <?= $loaiThietBiLabels[$tb['loai_thiet_bi']] ?? htmlspecialchars(str_replace('_', ' ', $tb['loai_thiet_bi']), ENT_QUOTES, 'UTF-8') ?> (<?= $trangThaiThietBiLabels[$tb['trang_thai']] ?? htmlspecialchars($tb['trang_thai'], ENT_QUOTES, 'UTF-8') ?>)</option>
+                                                    <option value="<?= (int) $tb['id'] ?>"<?= $selectedThietBiId === (int) $tb['id'] ? ' selected' : '' ?>><?= htmlspecialchars($tb['ten_thiet_bi'], ENT_QUOTES, 'UTF-8') ?> — <?= $loaiThietBiLabels[$tb['loai_thiet_bi']] ?? htmlspecialchars(str_replace('_', ' ', $tb['loai_thiet_bi']), ENT_QUOTES, 'UTF-8') ?> (<?= $trangThaiThietBiLabels[$tb['trang_thai']] ?? htmlspecialchars($tb['trang_thai'], ENT_QUOTES, 'UTF-8') ?>)</option>
                                                 <?php endforeach; ?>
                                             </optgroup>
                                         <?php endforeach; ?>

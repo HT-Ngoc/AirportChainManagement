@@ -80,12 +80,66 @@ class BaoTriController {
 
     public function getDanhSachThietBi() {
         $sql = "SELECT tb.id, tb.ten_thiet_bi, tb.loai_thiet_bi, tb.trang_thai, sb.ten_san_bay,
-                       (SELECT COUNT(*) FROM yeu_cau_bao_tri y WHERE y.id_thiet_bi = tb.id) AS so_phieu
+                       (SELECT COUNT(*) FROM yeu_cau_bao_tri y WHERE y.id_thiet_bi = tb.id) AS so_phieu,
+                       (SELECT COUNT(*) FROM yeu_cau_bao_tri y
+                        WHERE y.id_thiet_bi = tb.id AND y.trang_thai_xu_ly <> 'Hoan_Thanh') AS so_phieu_mo
                 FROM thiet_bi_san_bay tb
                 JOIN san_bay sb ON tb.id_san_bay = sb.id
                 ORDER BY tb.id DESC";
         $result = $this->db->query($sql);
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    /**
+     * Lấy một thiết bị kèm số phiếu bảo trì / số phiếu đang mở.
+     */
+    public function getThietBiById($id) {
+        $id = (int) $id;
+        if ($id <= 0) {
+            return null;
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT tb.id, tb.id_san_bay, tb.ten_thiet_bi, tb.loai_thiet_bi, tb.trang_thai,
+                    sb.ten_san_bay,
+                    (SELECT COUNT(*) FROM yeu_cau_bao_tri y WHERE y.id_thiet_bi = tb.id) AS so_phieu,
+                    (SELECT COUNT(*) FROM yeu_cau_bao_tri y
+                     WHERE y.id_thiet_bi = tb.id AND y.trang_thai_xu_ly <> 'Hoan_Thanh') AS so_phieu_mo
+             FROM thiet_bi_san_bay tb
+             LEFT JOIN san_bay sb ON tb.id_san_bay = sb.id
+             WHERE tb.id = ?"
+        );
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return $row ?: null;
+    }
+
+    /**
+     * Lịch sử bảo trì của một thiết bị, mới nhất trước.
+     */
+    public function getLichSuBaoTri($id) {
+        $id = (int) $id;
+        if ($id <= 0) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT id, id_thiet_bi, mo_ta_su_co, hinh_anh_minh_hoa, muc_do,
+                    trang_thai_xu_ly, ngay_tao
+             FROM yeu_cau_bao_tri
+             WHERE id_thiet_bi = ?
+             ORDER BY ngay_tao DESC, id DESC"
+        );
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+
+        return $rows;
     }
 
     public function getDanhSachTauBay() {
@@ -218,11 +272,8 @@ class BaoTriController {
             $stmt->execute();
             $stmt->close();
 
-            // Cập nhật trạng thái thiết bị thành Hỏng
-            $stmt = $this->db->prepare("UPDATE thiet_bi_san_bay SET trang_thai = 'Hong' WHERE id = ?");
-            $stmt->bind_param('i', $id_thiet_bi);
-            $stmt->execute();
-            $stmt->close();
+            // Cập nhật trạng thái thiết bị theo tiến độ các phiếu đang mở
+            $this->capNhatTrangThaiThietBiTheoPhieu($id_thiet_bi);
 
             $this->db->commit();
         } catch (Throwable $e) {
@@ -271,6 +322,72 @@ class BaoTriController {
         }
 
         $this->setFlash('success', 'Đã thêm thiết bị mới.');
+        $this->redirect($this->viewUrl('thiet_bi.php'));
+    }
+
+    /**
+     * Cập nhật thông tin thiết bị.
+     * Trạng thái không cho sửa tay; được tính tự động từ các phiếu bảo trì.
+     */
+    public function updateThietBi() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect($this->viewUrl('thiet_bi.php'));
+        }
+
+        $id            = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $ten_thiet_bi  = isset($_POST['ten_thiet_bi']) ? trim((string) $_POST['ten_thiet_bi']) : '';
+        $loai_thiet_bi = isset($_POST['loai_thiet_bi']) ? (string) $_POST['loai_thiet_bi'] : '';
+        $id_san_bay    = isset($_POST['id_san_bay']) ? (int) $_POST['id_san_bay'] : 0;
+
+        $errorQuery = $id > 0 ? ['sua' => $id, 'open' => 'edit'] : [];
+
+        if ($id <= 0 || $ten_thiet_bi === '' || $id_san_bay <= 0
+            || !in_array($loai_thiet_bi, self::LOAI_THIET_BI_HOP_LE, true)) {
+            $this->setFlash('error', 'Dữ liệu thiết bị không hợp lệ.');
+            $this->redirect($this->viewUrl('thiet_bi.php', $errorQuery));
+        }
+
+        // Thiết bị phải tồn tại.
+        $stmt = $this->db->prepare("SELECT id FROM thiet_bi_san_bay WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->store_result();
+        $thiet_bi_ton_tai = $stmt->num_rows > 0;
+        $stmt->close();
+
+        if (!$thiet_bi_ton_tai) {
+            $this->setFlash('error', 'Không tìm thấy thiết bị cần cập nhật.');
+            $this->redirect($this->viewUrl('thiet_bi.php'));
+        }
+
+        // Sân bay phải tồn tại.
+        $stmt = $this->db->prepare("SELECT id FROM san_bay WHERE id = ?");
+        $stmt->bind_param('i', $id_san_bay);
+        $stmt->execute();
+        $stmt->store_result();
+        $san_bay_ton_tai = $stmt->num_rows > 0;
+        $stmt->close();
+
+        if (!$san_bay_ton_tai) {
+            $this->setFlash('error', 'Sân bay được chọn không tồn tại.');
+            $this->redirect($this->viewUrl('thiet_bi.php', $errorQuery));
+        }
+
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE thiet_bi_san_bay
+                 SET ten_thiet_bi = ?, loai_thiet_bi = ?, id_san_bay = ?
+                 WHERE id = ?"
+            );
+            $stmt->bind_param('ssii', $ten_thiet_bi, $loai_thiet_bi, $id_san_bay, $id);
+            $stmt->execute();
+            $stmt->close();
+        } catch (Throwable $e) {
+            $this->setFlash('error', 'Lỗi cập nhật thiết bị: ' . $e->getMessage());
+            $this->redirect($this->viewUrl('thiet_bi.php', $errorQuery));
+        }
+
+        $this->setFlash('success', 'Đã cập nhật thiết bị.');
         $this->redirect($this->viewUrl('thiet_bi.php'));
     }
 
@@ -346,28 +463,8 @@ class BaoTriController {
             $stmt->execute();
             $stmt->close();
 
-            $trang_thai_thiet_bi = 'Hong';
-            if ($trang_thai_moi === 'Hoan_Thanh') {
-                // Chỉ chuyển thiết bị về Tốt khi không còn phiếu nào đang mở
-                $stmt = $this->db->prepare(
-                    "SELECT COUNT(*) FROM yeu_cau_bao_tri
-                     WHERE id_thiet_bi = ? AND trang_thai_xu_ly <> 'Hoan_Thanh'"
-                );
-                $stmt->bind_param('i', $id_thiet_bi);
-                $stmt->execute();
-                $stmt->bind_result($so_phieu_mo);
-                $stmt->fetch();
-                $stmt->close();
-
-                if ((int) $so_phieu_mo === 0) {
-                    $trang_thai_thiet_bi = 'Tot';
-                }
-            }
-
-            $stmt = $this->db->prepare("UPDATE thiet_bi_san_bay SET trang_thai = ? WHERE id = ?");
-            $stmt->bind_param('si', $trang_thai_thiet_bi, $id_thiet_bi);
-            $stmt->execute();
-            $stmt->close();
+            // Tính lại trạng thái thiết bị theo tất cả phiếu còn mở
+            $this->capNhatTrangThaiThietBiTheoPhieu($id_thiet_bi);
 
             $this->db->commit();
         } catch (Throwable $e) {
@@ -455,6 +552,46 @@ class BaoTriController {
     /* =========================================================
      * TIỆN ÍCH
      * ========================================================= */
+
+    /**
+     * Tự động tính trạng thái thiết bị từ các phiếu bảo trì:
+     * - Có phiếu Đang xử lý  -> Bao_Tri
+     * - Chỉ còn phiếu Mới    -> Hong
+     * - Không còn phiếu mở   -> Tot
+     */
+    private function capNhatTrangThaiThietBiTheoPhieu($id_thiet_bi) {
+        $id_thiet_bi = (int) $id_thiet_bi;
+        if ($id_thiet_bi <= 0) {
+            return;
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) AS so_phieu_mo,
+                    SUM(CASE WHEN trang_thai_xu_ly = 'Dang_Xu_Ly' THEN 1 ELSE 0 END) AS so_dang_xu_ly
+             FROM yeu_cau_bao_tri
+             WHERE id_thiet_bi = ? AND trang_thai_xu_ly <> 'Hoan_Thanh'"
+        );
+        $stmt->bind_param('i', $id_thiet_bi);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        $so_phieu_mo  = (int) ($row['so_phieu_mo'] ?? 0);
+        $so_dang_xu_ly = (int) ($row['so_dang_xu_ly'] ?? 0);
+
+        if ($so_dang_xu_ly > 0) {
+            $trang_thai = 'Bao_Tri';
+        } elseif ($so_phieu_mo > 0) {
+            $trang_thai = 'Hong';
+        } else {
+            $trang_thai = 'Tot';
+        }
+
+        $stmt = $this->db->prepare("UPDATE thiet_bi_san_bay SET trang_thai = ? WHERE id = ?");
+        $stmt->bind_param('si', $trang_thai, $id_thiet_bi);
+        $stmt->execute();
+        $stmt->close();
+    }
 
     private function viewUrl($file, array $query = []) {
         $base = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
