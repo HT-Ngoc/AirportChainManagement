@@ -118,8 +118,6 @@ $breadcrumb = [
     ['label' => 'Chi tiết', 'url' => null],
 ];
 
-$uploadBase = BASE_URL . '/public/uploads/bao_tri/';
-
 $statusLabel = $statusLabels[$thietBi['trang_thai']] ?? htmlspecialchars((string) $thietBi['trang_thai'], ENT_QUOTES, 'UTF-8');
 $statusClass = $statusBadgeClasses[$thietBi['trang_thai']] ?? 'text-secondary bg-body-tertiary border-secondary-subtle';
 $statusDot   = $statusDotClasses[$thietBi['trang_thai']] ?? 'bg-secondary';
@@ -315,9 +313,7 @@ ob_start();
                                 $ticketStatusIcon = $statusIcons[$trangThai] ?? 'bi-circle';
                                 $timelineDotClass = $timelineDotClasses[$trangThai] ?? 'maint-timeline-dot--secondary';
                                 $historyCardClass = $timelineCardClasses[$trangThai] ?? 'maint-history-card--secondary';
-                                $anhUrl = !empty($ticket['hinh_anh_minh_hoa'])
-                                    ? $uploadBase . rawurlencode($ticket['hinh_anh_minh_hoa'])
-                                    : '';
+                                $anhUrl = baoTriImageUrl($ticket['hinh_anh_minh_hoa'] ?? null, $ticket['mo_ta_su_co'] ?? '');
                                 ?>
                                 <div class="maint-timeline-item">
                                     <span class="maint-timeline-dot <?= $timelineDotClass ?>">

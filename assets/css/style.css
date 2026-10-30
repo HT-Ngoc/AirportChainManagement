@@ -486,19 +486,14 @@ body:has(.modal.is-open) {
 }
 
 .maint-ticket-thumb {
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
   object-fit: cover;
 }
 
 .maint-thumb {
-  transition: transform .18s ease, box-shadow .18s ease;
-}
-
-.maint-thumb:hover {
-  transform: scale(1.04);
-  box-shadow: 0 .4rem .9rem rgba(15, 23, 42, .16);
+  border-radius: .5rem;
 }
 
 .maint-empty-icon {
@@ -594,38 +589,19 @@ body:has(.modal.is-open) {
   color: rgb(var(--maint-rgb));
 }
 
-.maint-upload {
-  padding: .9rem;
-  border: 1px dashed rgba(var(--maint-rgb), .35);
-  border-radius: .85rem;
-  background: linear-gradient(135deg, rgba(var(--maint-rgb), .05), transparent);
-  text-align: center;
-  transition: border-color .15s ease, background-color .15s ease;
+.maint-image-upload {
+  padding: .6rem .7rem;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: .6rem;
 }
 
-.maint-upload:hover {
-  border-color: rgba(var(--maint-rgb), .7);
-  background: rgba(var(--maint-rgb), .06);
-}
-
-.maint-upload > i {
-  display: block;
-  margin-bottom: .25rem;
+.maint-image-upload-head {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-bottom: .4rem;
   color: rgb(var(--maint-rgb));
-  font-size: 1.5rem;
-}
-
-.maint-upload .form-control {
-  background: var(--bs-body-bg);
-}
-
-.maint-upload .form-control::file-selector-button {
-  margin-right: .6rem;
-  padding: .25rem .55rem;
-  border: 0;
-  border-radius: .4rem;
-  background: rgba(var(--maint-rgb), .12);
-  color: rgb(var(--maint-rgb));
+  font-size: .8rem;
 }
 
 .maint-severity .btn {
@@ -806,10 +782,10 @@ body:has(.modal.is-open) {
 }
 
 .maint-history-thumb {
-  max-width: 220px;
-  max-height: 140px;
+  max-width: 200px;
+  max-height: 130px;
   object-fit: cover;
-  border-radius: .6rem;
+  border-radius: .5rem;
 }
 
 @media (max-width: 575.98px) {

@@ -39,8 +39,6 @@ $breadcrumb = [
     ['label' => 'Bảo trì', 'url' => null],
 ];
 
-$uploadBase = BASE_URL . '/public/uploads/bao_tri/';
-
 $statusLabels = [
     'Moi'        => 'Mới',
     'Dang_Xu_Ly' => 'Đang xử lý',
@@ -409,9 +407,7 @@ ob_start();
                         $priorityAvatarClass = $priorityAvatarClasses[$mucDo] ?? 'maint-avatar--secondary';
                         $priorityAccent = $priorityAccentColors[$mucDo] ?? 'var(--bs-secondary)';
                         $statusPulseClass = $trangThai === 'Dang_Xu_Ly' ? ' maint-pulse' : '';
-                        $anhUrl = !empty($ticket['hinh_anh_minh_hoa'])
-                            ? $uploadBase . rawurlencode($ticket['hinh_anh_minh_hoa'])
-                            : '';
+                        $anhUrl = baoTriImageUrl($ticket['hinh_anh_minh_hoa'] ?? null, $ticket['mo_ta_su_co'] ?? '');
                         ?>
                         <tr class="maint-row" style="--row-accent: <?= $priorityAccent ?>;"
                             data-ticket-search="<?= htmlspecialchars($maPhieu . ' ' . $ticket['ten_thiet_bi'] . ' ' . $ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8') ?>"
@@ -590,13 +586,16 @@ ob_start();
 
                         <div class="col-lg-5">
                             <div class="maint-form-section"><i class="bi bi-image"></i> Minh chứng</div>
-                            <label for="modal_hinh_anh_minh_hoa" class="visually-hidden">Hình ảnh minh họa</label>
-                            <div class="maint-upload">
-                                <i class="bi bi-cloud-arrow-up"></i>
-                                <div class="small fw-semibold">Chọn ảnh minh họa</div>
-                                <div class="small text-secondary mb-2">JPG, PNG hoặc GIF · tối đa 5 MB</div>
-                                <input type="file" name="hinh_anh_minh_hoa" id="modal_hinh_anh_minh_hoa" class="form-control form-control-sm"
-                                       accept="image/png, image/jpeg, image/jpg, image/gif">
+                            <div class="maint-image-upload">
+                                <div class="maint-image-upload-head">
+                                    <i class="bi bi-image"></i>
+                                    <span class="fw-semibold">Chọn ảnh</span>
+                                </div>
+                                <label for="modal_anh_tai_len" class="visually-hidden">Chọn ảnh minh họa</label>
+                                <input type="file" name="anh_tai_len" id="modal_anh_tai_len" class="form-control form-control-sm"
+                                       accept="image/png, image/jpeg, image/jpg, image/gif, image/webp">
+                                <div class="small text-secondary mt-1">
+                                </div>
                             </div>
                         </div>
                     </div>
