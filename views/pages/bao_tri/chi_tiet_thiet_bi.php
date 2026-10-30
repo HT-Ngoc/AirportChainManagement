@@ -101,6 +101,12 @@ $timelineDotClasses = [
     'Hoan_Thanh' => 'maint-timeline-dot--success',
 ];
 
+$timelineCardClasses = [
+    'Moi'        => 'maint-history-card--info',
+    'Dang_Xu_Ly' => 'maint-history-card--warning',
+    'Hoan_Thanh' => 'maint-history-card--success',
+];
+
 $pageTitle  = 'Chi tiết thiết bị';
 $pageHeader = 'Chi tiết thiết bị';
 $navActive    = 'bao_tri';
@@ -249,7 +255,9 @@ ob_start();
                         </span>
                         <div>
                             <h3 class="card-title mb-0 float-none">Lịch sử bảo trì</h3>
-                            <div class="small text-secondary mt-1">Các phiếu bảo trì gắn với thiết bị này</div>
+                            <div class="small text-secondary mt-1">
+                                <?= $soPhieu > 0 ? $soPhieu . ' phiếu bảo trì gắn với thiết bị này' : 'Các phiếu bảo trì gắn với thiết bị này' ?>
+                            </div>
                         </div>
                     </div>
                     <a href="<?= htmlspecialchars($ticketListUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-primary">
@@ -268,6 +276,30 @@ ob_start();
                             </a>
                         </div>
                     <?php else: ?>
+                        <div class="maint-history-summary">
+                            <div class="maint-history-summary__item maint-history-summary__item--info">
+                                <span class="maint-history-summary__icon"><i class="bi bi-hourglass-split"></i></span>
+                                <div>
+                                    <div class="maint-history-summary__value"><?= $soPhieuMoi ?></div>
+                                    <div class="maint-history-summary__label">Mới</div>
+                                </div>
+                            </div>
+                            <div class="maint-history-summary__item maint-history-summary__item--warning">
+                                <span class="maint-history-summary__icon"><i class="bi bi-gear-wide-connected"></i></span>
+                                <div>
+                                    <div class="maint-history-summary__value"><?= $soDangXuLy ?></div>
+                                    <div class="maint-history-summary__label">Đang xử lý</div>
+                                </div>
+                            </div>
+                            <div class="maint-history-summary__item maint-history-summary__item--success">
+                                <span class="maint-history-summary__icon"><i class="bi bi-check2-circle"></i></span>
+                                <div>
+                                    <div class="maint-history-summary__value"><?= $soHoanThanh ?></div>
+                                    <div class="maint-history-summary__label">Hoàn thành</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="maint-timeline">
                             <?php foreach ($lichSu as $ticket): ?>
                                 <?php
@@ -282,6 +314,7 @@ ob_start();
                                 $ticketStatusClass = $ticketStatusBadgeClasses[$trangThai] ?? 'text-secondary bg-body-tertiary border-secondary-subtle';
                                 $ticketStatusIcon = $statusIcons[$trangThai] ?? 'bi-circle';
                                 $timelineDotClass = $timelineDotClasses[$trangThai] ?? 'maint-timeline-dot--secondary';
+                                $historyCardClass = $timelineCardClasses[$trangThai] ?? 'maint-history-card--secondary';
                                 $anhUrl = !empty($ticket['hinh_anh_minh_hoa'])
                                     ? $uploadBase . rawurlencode($ticket['hinh_anh_minh_hoa'])
                                     : '';
@@ -290,35 +323,35 @@ ob_start();
                                     <span class="maint-timeline-dot <?= $timelineDotClass ?>">
                                         <i class="bi <?= $ticketStatusIcon ?>"></i>
                                     </span>
-                                    <div class="maint-timeline-content">
-                                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                                            <div>
-                                                <div class="fw-semibold text-primary maint-code"><?= $maPhieu ?></div>
-                                                <div class="small text-secondary"><i class="bi bi-clock me-1"></i><?= $ngayTao ?></div>
+                                    <div class="maint-timeline-content maint-history-card <?= $historyCardClass ?>">
+                                        <div class="maint-history-card__header">
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <span class="maint-history-code maint-code"><?= $maPhieu ?></span>
+                                                <span class="badge rounded-pill border <?= $ticketStatusClass ?>"><?= $ticketStatusLabel ?></span>
                                             </div>
-                                            <div class="d-flex flex-wrap gap-1">
-                                                <span class="badge rounded-pill border <?= $priorityClass ?>">
-                                                    <i class="bi <?= $priorityIcon ?> me-1"></i><?= $priorityLabel ?>
-                                                </span>
-                                                <span class="badge rounded-pill border <?= $ticketStatusClass ?>">
-                                                    <?= $ticketStatusLabel ?>
-                                                </span>
+                                            <div class="small text-secondary text-nowrap">
+                                                <i class="bi bi-clock me-1"></i><?= $ngayTao ?>
                                             </div>
                                         </div>
 
-                                        <div class="mt-2 mb-2 text-break">
-                                            <?= nl2br(htmlspecialchars($ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8')) ?>
+                                        <div class="maint-history-card__body">
+                                            <p class="mb-2 text-break"><?= nl2br(htmlspecialchars($ticket['mo_ta_su_co'], ENT_QUOTES, 'UTF-8')) ?></p>
+
+                                            <?php if ($anhUrl !== ''): ?>
+                                                <a href="<?= $anhUrl ?>" target="_blank" rel="noopener" class="d-inline-block mb-1" title="Xem ảnh minh họa">
+                                                    <img src="<?= $anhUrl ?>" alt="Ảnh sự cố" class="rounded border maint-history-thumb maint-thumb">
+                                                </a>
+                                            <?php endif; ?>
                                         </div>
 
-                                        <?php if ($anhUrl !== ''): ?>
-                                            <a href="<?= $anhUrl ?>" target="_blank" rel="noopener" class="d-inline-block mb-2" title="Xem ảnh minh họa">
-                                                <img src="<?= $anhUrl ?>" alt="Ảnh sự cố" class="rounded border maint-history-thumb maint-thumb">
+                                        <div class="maint-history-card__footer">
+                                            <span class="badge rounded-pill border <?= $priorityClass ?>">
+                                                <i class="bi <?= $priorityIcon ?> me-1"></i><?= $priorityLabel ?>
+                                            </span>
+                                            <a href="<?= htmlspecialchars(baoTriUrl('index.php', ['q' => $maPhieu]), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-box-arrow-up-right me-1"></i>Mở phiếu
                                             </a>
-                                        <?php endif; ?>
-
-                                        <a href="<?= htmlspecialchars(baoTriUrl('index.php', ['q' => $maPhieu]), ENT_QUOTES, 'UTF-8') ?>" class="small text-decoration-none">
-                                            <i class="bi bi-box-arrow-up-right me-1"></i>Mở trong danh sách phiếu
-                                        </a>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
